@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
             url,
             {
                 headers: {
+                    Authorization: `Bearer ${token}`,
                     Cookie: `intranet-token=${token}`
                 },
             }

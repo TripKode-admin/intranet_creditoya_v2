@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       `${process.env.GATEWAY_API}/loans/pending?page=${page}&pageSize=${pageSize}`,
       {
         headers: {
-          // Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           Cookie: `intranet-token=${token}`
         },
       }

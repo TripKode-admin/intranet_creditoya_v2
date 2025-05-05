@@ -14,7 +14,13 @@ export async function GET(request: Request) {
 
   try {
     const url = `${process.env.GATEWAY_API}/pdfs/loan-documents/${loanId}`;
-    const response = await axios.get(url, { headers: { Cookie: `intranet-token=${token}` } });
+    const response = await axios.get(url,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Cookie: `intranet-token=${token}`
+        }
+      });
 
     return NextResponse.json({ success: true, data: response.data });
   } catch (error) {

@@ -10,7 +10,12 @@ export async function POST(request: Request) {
         await axios.post(
             `${process.env.GATEWAY_API}/auth/logout/intranet`,
             {},
-            { headers: { Cookie: `intranet-token=${token}` } }
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Cookie: `intranet-token=${token}`
+                }
+            }
         );
 
         // Crear la respuesta

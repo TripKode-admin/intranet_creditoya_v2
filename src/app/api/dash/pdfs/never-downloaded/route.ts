@@ -21,7 +21,12 @@ export async function GET(request: NextRequest) {
 
         const response = await axios.get(
             `${process.env.GATEWAY_API}/pdfs/never-downloaded${queryString}`,
-            { headers: { Cookie: `intranet-token=${token}` } }
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Cookie: `intranet-token=${token}`
+                }
+            }
         );
 
         return NextResponse.json({

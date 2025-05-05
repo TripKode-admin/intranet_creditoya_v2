@@ -30,12 +30,15 @@ export async function PATCH(request: NextRequest) {
     // Extraer el cuerpo de la solicitud
     const requestBody: { status: Status } = await request.json();
 
+    console.log(requestBody)
+
     // Hacer la petición al backend de NestJS
     const response = await axios.patch(
       `${process.env.GATEWAY_API}/loans/${loanId}/status`,
       requestBody,
       {
         headers: {
+          Authorization: `Bearer ${token}`,
           Cookie: `intranet-token=${token}`
         }
       },

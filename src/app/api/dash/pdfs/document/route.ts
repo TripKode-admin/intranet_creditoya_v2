@@ -13,6 +13,7 @@ export async function GET(request: Request) {
       `${process.env.GATEWAY_API}/pdfs/document/${documentId}`,
       {
         headers: {
+          Authorization: `Bearer ${token}`,
           Cookie: `intranet-token=${token}`
         },
         responseType: 'arraybuffer'

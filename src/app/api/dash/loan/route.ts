@@ -25,6 +25,7 @@ export async function GET(request: Request) {
       `${process.env.GATEWAY_API}/loans/${userId}/${loanId}/info`,
       {
         headers: {
+          Authorization: `Bearer ${token}`,
           Cookie: `intranet-token=${token}`
         },
         withCredentials: true

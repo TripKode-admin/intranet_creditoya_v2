@@ -7,7 +7,12 @@ export async function GET() {
   try {
     const response = await axios.get(
       `${process.env.GATEWAY_API}/pdfs/pending-documents`,
-      { headers: { Cookie: `intranet-token=${token}` } }
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Cookie: `intranet-token=${token}`
+        }
+      }
     );
     return NextResponse.json({ success: true, data: response.data });
   } catch (error) {

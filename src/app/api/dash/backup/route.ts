@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
                 `${process.env.GATEWAY_API}/admin/database/backup/download/${relativePath}`,
                 {
                     headers: {
+                        Authorization: `Bearer ${token}`,
                         Cookie: `intranet-token=${token}`,
                     },
                 }
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
             }, { status: 500 });
         }
     }
+
     // Para listar todos los backups (ruta adaptada para /api/dash/backup)
     else if (path.includes('/api/dash/backup')) {
         try {
@@ -65,6 +67,7 @@ export async function GET(req: NextRequest) {
             }, { status: 500 });
         }
     }
+
     // Fallback para rutas GET desconocidas
     else {
         return NextResponse.json({
@@ -88,6 +91,7 @@ export async function POST(req: NextRequest) {
                 {},  // Empty body object
                 {
                     headers: {
+                        Authorization: `Bearer ${token}`,
                         Cookie: `intranet-token=${token}`,
                         'Content-Type': 'application/json',
                     },
@@ -120,7 +124,7 @@ export async function POST(req: NextRequest) {
                 { backupPath: body.backupPath },
                 {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 }
