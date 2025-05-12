@@ -45,8 +45,8 @@ export const ZipDocumentCard = ({ document }: { document: Partial<GeneratedDocum
                         </div>
                     </div>
                     <div className='flex sm:flex-row flex-col gap-2 mt-3'>
-                        {NamesDocs.map(names => (
-                            <div className='flex flex-row bg-gray-200 gap-1 px-2 py-1 rounded-md'>
+                        {NamesDocs.map((names, index) => (
+                            <div className='flex flex-row bg-gray-200 gap-1 px-2 py-1 rounded-md' key={index}>
                                 <div className='grid place-content-center'>
                                     <CiFileOn className='drop-shadow-md text-gray-700' size={18} />
                                 </div>
