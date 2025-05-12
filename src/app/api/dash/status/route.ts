@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
-import { Status } from '@/types/loan';
+import { ScalarLoanApplication, Status } from '@/types/loan';
 import { validateToken } from '@/lib/ValidateAuth';
 
 // Define a comprehensive type for the API response
@@ -85,6 +85,8 @@ export async function GET(request: NextRequest) {
         );
         const responseData = response.data;
 
+        console.log(responseData)
+
         // Validate response data
         if (!responseData || !responseData.data) {
             throw new Error('Invalid response format from API');
@@ -125,9 +127,9 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper function to transform loan data for frontend
-function transformLoanData(item: any) {
+function transformLoanData(item: ScalarLoanApplication) {
     // Safely extract document information
-    const documentInfo = item.user?.Document?.[0] || {};
+    const documentInfo = item.user?.Document?.[0];
 
     return {
         user: {
@@ -138,11 +140,12 @@ function transformLoanData(item: any) {
             city: item.user?.city || 'No definido'
         },
         document: {
-            typeDocument: documentInfo.typeDocument || 'No definido',
-            number: documentInfo.number || 'No definido'
+            typeDocument: documentInfo?.typeDocument || 'No definido',
+            number: documentInfo?.number || 'No definido'
         },
         loanApplication: {
             id: item.id,
+            userId: item.userId,
             cantity: item.cantity,
             newCantity: item.newCantity,
             newCantityOpt: item.newCantityOpt,

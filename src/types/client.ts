@@ -35,4 +35,4 @@ export type companiesUser =
     | "pichichi_sas"
     | "pichichi_coorte"
     | "valor_agregado"
-    | "no";
+    | "sin_asignar";

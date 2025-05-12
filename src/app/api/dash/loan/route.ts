@@ -38,6 +38,8 @@ export async function GET(request: Request) {
       data: response.data
     };
 
+    console.log(apiResponse.data)
+
     return NextResponse.json(apiResponse);
   } catch (error) {
     // Manejar el error y construir la respuesta de error

@@ -129,7 +129,7 @@ function DashboardPage() {
                                             </div>
 
                                             <button
-                                                onClick={() => router.push(`/dashboard/loan/${item.id}?user_id=${item.userId}`)}
+                                                onClick={() => router.push(`/dashboard/loan/${item.id}?userId=${item.userId}`)}
                                                 className="px-5 py-2 text-white bg-green-500 hover:bg-green-600 rounded-md text-sm font-medium transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
                                             >
                                                 <FiCheckCircle className="drop-shadow-md" size={16} />

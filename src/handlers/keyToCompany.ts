@@ -9,7 +9,7 @@ const keyToCompanyMap: { [key in companiesUser | string]: string } = {
   pichichi_sas: "Pichichi S.A.S",
   pichichi_coorte: "Pichichi Coorte",
   valor_agregado: "Valor Agregado",
-  no: "No Asignado",
+  sin_asignar: "No Asignado",
 };
 
 export const handleKeyToCompany = (key: string): string => {

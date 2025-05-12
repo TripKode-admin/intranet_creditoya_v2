@@ -88,7 +88,7 @@ function ActiveSection() {
         return pageNumbers;
     };
 
-    console.log(pagination)
+    console.log("LoanData: ", loanData)
 
     return (
         <SidebarLayout>
@@ -199,7 +199,7 @@ function ActiveSection() {
                         <>
                             <div className="space-y-4">
                                 {loanData.map((item) => (
-                                    <div onClick={() => router.push(`/dashboard/loan/${item.loanApplication.id}`)} key={item.loanApplication.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                    <div onClick={() => router.push(`/dashboard/loan/${item.loanApplication.id}?userId=${item.loanApplication.userId}`)} key={item.loanApplication.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                                         <div className="flex flex-col md:flex-row md:justify-between md:items-center">
                                             <div className="mb-3 md:mb-0">
                                                 <div className="flex items-center mb-2">
@@ -228,11 +228,11 @@ function ActiveSection() {
                                         <div className="mt-3 flex flex-wrap justify-between items-center">
                                             <div className="flex items-center text-sm text-gray-600 mb-2 md:mb-0">
                                                 <FiCalendar className="mr-1" />
-                                                <span>{formatDate(item.loanApplication.created_at)}</span>
+                                                <span>{formatDate(String(item.loanApplication.created_at))}</span>
                                             </div>
 
                                             <div className="flex items-center">
-                                                <span className="text-sm mr-2">{handleKeyToCompany(item.user.currentCompanie)}</span>
+                                                <span className="text-sm mr-2">{handleKeyToCompany(item.user.currentCompanie || "Sin Definir")}</span>
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-medium ${item.loanApplication.status === 'Aprobado'
                                                         ? 'bg-green-100 text-green-800'

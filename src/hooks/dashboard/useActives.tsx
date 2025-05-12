@@ -5,36 +5,14 @@ import axios from "axios";
 import { debounce } from "lodash";
 import { IoReloadOutline } from "react-icons/io5";
 import { useRouter } from "next/navigation";
-
-interface User {
-    names: string;
-    firstLastName: string;
-    secondLastName: string;
-    currentCompanie: string;
-    city: string;
-}
-
-interface Document {
-    typeDocument: string;
-    number: string;
-}
-
-interface LoanApplication {
-    id: string;
-    cantity: string;
-    newCantity?: string;
-    newCantityOpt?: boolean;
-    status: string;
-    created_at: string;
-    reasonChangeCantity?: string;
-    reasonReject?: string;
-    entity: string;
-}
+import { companiesUser, ScalarClient } from "@/types/client";
+import { ScalarLoanApplication } from "@/types/loan";
+import { ScalarDocument } from "@/types/documents";
 
 export interface LoanData {
-    user: User;
-    document: Document;
-    loanApplication: LoanApplication;
+    user: ScalarClient;
+    document: ScalarDocument;
+    loanApplication: ScalarLoanApplication;
 }
 
 interface ApiResponse {
@@ -111,6 +89,7 @@ function useActives() {
 
             if (response.data.success && Array.isArray(response.data.data)) {
                 const responseData = response.data.data;
+                console.log("response: ", responseData);
                 setLoanData(responseData);
 
                 setPagination({

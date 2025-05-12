@@ -1,6 +1,7 @@
 "use client"
 
 import { use } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { LoanDetails } from "@/components/gadgets/loan/Details";
@@ -13,24 +14,27 @@ import useLoan from "@/hooks/dashboard/useLoan";
 import { DocumentViewerModal } from "@/components/gadgets/loan/Modal/DocumentViewerModal";
 import { ZipDocumentsSection } from "@/components/gadgets/loan/zipDocs";
 import { GeneratedDocuments } from "@/types/loan";
-import { useSearchParams } from "next/navigation";
 
 interface LoanDataProps {
-    params: Promise<{ clientId: string, loanId: string }>;
+    params: Promise<{
+        loanId: string;
+    }>;
 }
 
 function LoanData({ params }: LoanDataProps) {
-    const resolveParams = use(params);
-    const { loanId } = resolveParams;
+    const router = useRouter();
     const searchParams = useSearchParams();
-    const clientId = searchParams.get('user_id') || ""
+
+    // Obtener el loanId de los params de la ruta y userId de los query params
+    const resolvedParams = use(params)
+    const { loanId } = resolvedParams;
+    const userId = searchParams.get('userId');
 
     const {
         loading,
         error,
         loanApplication,
         client,
-        router,
         documents,
         isRejectModalOpen,
         isAdjustModalOpen,
@@ -49,7 +53,10 @@ function LoanData({ params }: LoanDataProps) {
         setRejectReason,
         setNewAmount,
         setAdjustReason,
-    } = useLoan({ loanId, clientId });
+    } = useLoan({
+        loanId: loanId,
+        clientId: userId || ""
+    });
 
     if (loading) {
         return (
@@ -66,8 +73,6 @@ function LoanData({ params }: LoanDataProps) {
             </SidebarLayout>
         );
     }
-
-    console.log(documents)
 
     return (
         <SidebarLayout>

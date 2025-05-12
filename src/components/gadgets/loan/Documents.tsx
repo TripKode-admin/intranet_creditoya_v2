@@ -1,3 +1,4 @@
+import { CiCircleInfo } from "react-icons/ci";
 import { IoMdDocument, IoMdDownload, IoMdEye } from "react-icons/io";
 import { MdBlock } from "react-icons/md";
 
@@ -73,6 +74,17 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ document, setSelecte
                         <MdBlock className="text-red-600" />
                         <span>Rechazar</span>
                     </button>
+                </div>
+            )}
+
+            {!document.url && (
+                <div className="grid place-content-center gap-2 mt-2">
+                    <div className="flex flex-row gap-2">
+                        <div className="grid place-content-center">
+                            <CiCircleInfo size={18} />
+                        </div>
+                        <p className="w-full text-center text-sm text-gray-500">El cliente está exento de este requisito.</p>
+                    </div>
                 </div>
             )}
         </div>

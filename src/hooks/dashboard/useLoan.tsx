@@ -135,7 +135,6 @@ function useLoan({ loanId, clientId }: { loanId: string, clientId: string }) {
                 newCantity: newAmount,
                 reasonChangeCantity: adjustReason,
                 employeeId: user?.id
-
             });
 
             if (response.data.success) {
