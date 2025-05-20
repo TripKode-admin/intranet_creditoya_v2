@@ -43,7 +43,7 @@ export const LoanDetails = ({ loanApplication, client }: { loanApplication: Scal
                 <DetailItem
                     icon={<IoMdCall className="min-w-8 text-4xl text-gray-500 drop-shadow-md" />}
                     label="Teléfono"
-                    value={client.phone as string}
+                    value={loanApplication.phone as string || client.phone as string}
                 />
 
                 <DetailItem
