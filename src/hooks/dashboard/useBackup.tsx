@@ -65,7 +65,10 @@ function useBackup() {
     setError(null);
 
     try {
-      const response = await axios.get<ListBackupsResponse>('/api/dash/backup');
+      const response = await axios.get<ListBackupsResponse>('/api/dash/backup', {
+        withCredentials: true,
+        timeout: 15000
+      });
       const data = response.data;
 
       console.log("respaldes: ", data)
