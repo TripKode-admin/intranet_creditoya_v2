@@ -48,6 +48,7 @@ function useLoan({ loanId, clientId }: { loanId: string, clientId: string }) {
                         reasonChangeCantity: loanData.reasonChangeCantity,
                         fisrt_flyer: loanData.fisrt_flyer,
                         second_flyer: loanData.second_flyer,
+                        phone: loanData.phone,
                         third_flyer: loanData.third_flyer,
                         labor_card: loanData.labor_card,
                         created_at: loanData.created_at,
