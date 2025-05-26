@@ -1,7 +1,6 @@
 "use client";
 
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
-import { useAuth } from "@/context/useAuth";
 import { ScalarClient } from "@/types/client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -197,6 +196,8 @@ function useClient({ params }: { params: Promise<{ client_id: string }> | null }
             </div>
         </SidebarLayout>
     );
+
+    console.log("CurrentData", editableData)
 
     return {
         // Original useClient return values

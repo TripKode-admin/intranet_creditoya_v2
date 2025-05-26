@@ -13,7 +13,7 @@ import {
     FiChevronLeft
 } from 'react-icons/fi';
 import { LiaFileInvoiceDollarSolid } from 'react-icons/lia';
-import { TbHistory } from 'react-icons/tb';
+import { TbHistory, TbSettings } from 'react-icons/tb';
 
 const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
     const {
@@ -92,20 +92,28 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
 
                     {/* User profile - fixed at bottom */}
                     <div className="p-4 border-t border-gray-200 mt-auto">
-                        <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-green-700 flex items-center justify-center text-white font-bold mr-3">
-                                {user?.name?.charAt(0).toUpperCase()}
+                        <div className='flex flex-row justify-between'>
+                            <div className="flex items-center">
+                                <div className="w-8 h-8 rounded-full bg-green-700 flex items-center justify-center text-white font-bold mr-3">
+                                    {user?.name?.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="font-medium text-gray-800">{user?.name}</div>
+                                    <div className="text-xs text-gray-600">{user?.rol}</div>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <div className="font-medium text-gray-800">{user?.name}</div>
-                                <div className="text-xs text-gray-600">{user?.rol}</div>
+
+                            <div className='grid place-content-center px-3 py-2 bg-gray-50 hover:bg-gray-200 rounded-md cursor-pointer border border-transparent hover:border-gray-200'>
+                                <TbSettings size={20} className='text-gray-600 drop-shadow-md' />
                             </div>
                         </div>
 
                         {/* Logout button */}
-                        <div onClick={logout} className="mt-4 flex items-center text-gray-700 hover:text-red-600 cursor-pointer">
+                        <div onClick={logout} className="mt-4 flex flex-row justify-between text-white hover:text-gray-100 bg-red-300 px-3 py-2 rounded-md hover:bg-red-500 cursor-pointer">
                             <span>Cerrar Session</span>
-                            <FiLogOut className="ml-2" size={16} />
+                            <div className='grid place-content-center'>
+                                <FiLogOut className="ml-2" size={16} />
+                            </div>
                         </div>
                     </div>
                 </div>

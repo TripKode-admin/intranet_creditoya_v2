@@ -2,39 +2,17 @@
 
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
 import useProof from "@/hooks/dashboard/useProof";
-import { ScalarClient } from "@/types/client";
-import { ScalarLoanApplication } from "@/types/loan";
-import { FaEnvelope, FaFileAlt, FaPhone, FaUserAlt } from "react-icons/fa";
-import { IoReload } from "react-icons/io5";
-
-// Define the BatchGenerationDetail type
-type BatchGenerationDetail = {
-    name: string;
-    status: 'success' | 'error';
-    error?: string;
-};
+import { PiArrowCircleRightBold } from "react-icons/pi";
 
 function ComprobantesPage() {
     const {
-        loading,
-        error,
-        formatDate,
         getFullName,
-        pendingDocumentsLoans,
-        batchGenerationStatus,
         downloadDocumentById,
         eligibleDocuments,
         paginatedDocuments,
-        selectedDocuments,
-        expandedResults,
-        toggleDocumentSelection,
-        handleDownloadSelected,
         handlePageChange,
         currentPage,
         itemsPerPage,
-        handleRefresh,
-        handleGenerateAll,
-        setExpandedResults,
         isDownloaded,
         handleToggleDownload
     } = useProof();
@@ -44,334 +22,138 @@ function ComprobantesPage() {
             <div className="pt-20 p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen overflow-scroll">
                 <header className="mb-8">
                     <h1 className="text-xl sm:text-2xl font-medium text-gray-800">
-                        Documentos Pendientes
+                        Comprobantes Autogenerados
                     </h1>
                     <p className="text-gray-500 text-sm mt-1">
-                        Genera automáticamente los documentos para solicitudes de préstamo pendientes
+                        Contratos, Comprobantes y documentos autogenerados tras la aprobación de la solicitud de prestamo.
                     </p>
                 </header>
 
                 {/* Sección para Descargar ZIP */}
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex flex-row justify-between mb-5">
-                        <h2 className="font-medium text-gray-700 text-lg mb-4">
-                            Documentos Generados Disponibles para Descargar
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-gray-900">
+                            Documentos Disponibles
                         </h2>
-
-                        <p onClick={handleToggleDownload} className="grid place-content-center text-sm px-4 py-2 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-md text-gray-600">Descargar todos</p>
+                        <button
+                            onClick={handleToggleDownload}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                        >
+                            Descargar todos
+                        </button>
                     </div>
 
                     {isDownloaded == false && eligibleDocuments.length === 0 ? (
-                        <p className="text-gray-500">No hay documentos generados disponibles.</p>
+                        <div className="text-center py-12">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-50 rounded-full flex items-center justify-center">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <p className="text-gray-500 text-sm">No hay documentos generados disponibles</p>
+                        </div>
                     ) : (
                         <>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {paginatedDocuments.map((docWithLoan) => (
                                     <div
                                         key={docWithLoan.document.id}
-                                        className="flex items-center justify-between bg-gray-50 p-3 rounded"
+                                        className={`flex items-center justify-between p-4 rounded-lg border transition-all ${docWithLoan.downloadCount === 0
+                                            ? 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                                            : 'border-gray-100 bg-gray-50'
+                                            }`}
                                     >
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">
-                                                {getFullName(docWithLoan.loanApplication.user)}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                Préstamo ID: {docWithLoan.loanApplication.id}
-                                            </p>
+                                        <div className="flex items-center space-x-4">
+                                            <div className={`w-2 h-2 rounded-full ${docWithLoan.downloadCount === 0 ? 'bg-green-400' : 'bg-gray-300'
+                                                }`}></div>
+                                            <div>
+                                                <p className="font-medium text-gray-900 text-sm">
+                                                    {getFullName(docWithLoan.loanApplication.user)}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Solicitud: {docWithLoan.loanApplication.id}
+                                                </p>
+                                                <div className="flex flex-row justify-between mt-2 px-2 py-1 border border-gray-200 bg-gray-100 rounded-lg cursor-pointer">
+                                                    <p className="text-xs text-gray-500">Ver solicitud</p>
+                                                    <div className="grid place-content-center">
+                                                        <PiArrowCircleRightBold className="text-gray-500" />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedDocuments.includes(docWithLoan.document.id)}
-                                                onChange={() =>
-                                                    toggleDocumentSelection(docWithLoan.document.id)
-                                                }
-                                                disabled={docWithLoan.downloadCount !== 0} // Deshabilitar si downloadCount > 0
-                                                className="form-checkbox h-4 w-4 text-blue-600"
-                                            />
+
+                                        <div className="flex items-center">
                                             <button
                                                 onClick={() => downloadDocumentById(docWithLoan.document.id)}
-                                                disabled={docWithLoan.downloadCount !== 0} // Deshabilitar si downloadCount > 0
-                                                className={`px-3 py-1 text-sm rounded ${docWithLoan.downloadCount === 0
-                                                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                disabled={docWithLoan.downloadCount !== 0}
+                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${docWithLoan.downloadCount === 0
+                                                    ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
                                                     }`}
                                             >
-                                                Descargar ZIP
+                                                {docWithLoan.downloadCount === 0 ? 'Descargar' : 'Descargado'}
                                             </button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Botón para descargar seleccionados */}
-                            {selectedDocuments.length > 0 && (
-                                <div className="mt-4 flex justify-end">
-                                    <button
-                                        onClick={handleDownloadSelected}
-                                        className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                                    >
-                                        Descargar Seleccionados ({selectedDocuments.length})
-                                    </button>
+                            {/* Paginación minimalista */}
+                            {Math.ceil(eligibleDocuments.length / itemsPerPage) > 1 && (
+                                <div className="mt-6 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center justify-center space-x-1">
+                                        <button
+                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            disabled={currentPage === 1}
+                                            className="p-2 text-gray-400 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+
+                                        <div className="flex items-center space-x-1">
+                                            {Array.from({ length: Math.ceil(eligibleDocuments.length / itemsPerPage) }, (_, i) => i + 1).map((page) => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => handlePageChange(page)}
+                                                    className={`w-8 h-8 text-sm rounded-lg transition-colors ${currentPage === page
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                                        }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            disabled={currentPage * itemsPerPage >= eligibleDocuments.length}
+                                            className="p-2 text-gray-400 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             )}
-
-                            {/* Paginación */}
-                            <div className="mt-4 flex justify-center">
-                                <button
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-l disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                >
-                                    Anterior
-                                </button>
-                                <span className="px-4 py-2 bg-gray-100 text-gray-700">
-                                    Página {currentPage}
-                                </span>
-                                <button
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage * itemsPerPage >= eligibleDocuments.length}
-                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded-r disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
                         </>
                     )}
 
-                    { isDownloaded == true && (
-                        <div>hola</div>
-                    ) }
-                </div>
-
-                {/* Stats and Action Panel */}
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                            <h2 className="font-medium text-gray-700 text-lg">
-                                Solicitudes Pendientes de Documentos
-                            </h2>
-                            <div className="mt-2 flex items-center">
-                                <div className="bg-blue-100 text-blue-800 rounded-full h-10 w-10 flex items-center justify-center">
-                                    <FaFileAlt className="text-lg" />
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-2xl font-medium">
-                                        {pendingDocumentsLoans?.count || 0}
-                                    </p>
-                                    <p className="text-sm text-gray-500">solicitudes</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                            <button
-                                onClick={handleRefresh}
-                                className="flex items-center px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 bg-white hover:bg-gray-50"
-                            >
-                                <IoReload className="mr-2" />
-                                Actualizar
-                            </button>
-                            <button
-                                onClick={handleGenerateAll}
-                                disabled={batchGenerationStatus.inProgress || pendingDocumentsLoans?.count === 0}
-                                className={`px-4 py-2 rounded text-white text-sm ${batchGenerationStatus.inProgress || pendingDocumentsLoans?.count === 0
-                                    ? "bg-blue-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
-                                    }`}
-                            >
-                                {batchGenerationStatus.inProgress ? (
-                                    <span className="flex items-center">
-                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Generando...
-                                    </span>
-                                ) : (
-                                    "Generar todos los documentos"
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Batch Generation Results */}
-                {batchGenerationStatus.results && (
-                    <div className="bg-white rounded-lg shadow p-4 mb-6">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-medium text-gray-800">Resultados de la generación</h3>
-                            <button
-                                onClick={() => setExpandedResults(!expandedResults)}
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                                {expandedResults ? "Colapsar" : "Ver detalles"}
-                            </button>
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 mb-3">
-                            <div className="bg-green-50 px-3 py-2 rounded">
-                                <p className="text-sm text-gray-600">Procesados:</p>
-                                <p className="font-medium text-gray-800">{batchGenerationStatus.results.processed}</p>
-                            </div>
-                            <div className="bg-green-50 px-3 py-2 rounded">
-                                <p className="text-sm text-gray-600">Exitosos:</p>
-                                <p className="font-medium text-green-600">{batchGenerationStatus.results.successful}</p>
-                            </div>
-                            <div className="bg-red-50 px-3 py-2 rounded">
-                                <p className="text-sm text-gray-600">Fallidos:</p>
-                                <p className="font-medium text-red-600">{batchGenerationStatus.results.failed}</p>
-                            </div>
-                        </div>
-
-                        {expandedResults && batchGenerationStatus.results.details && batchGenerationStatus.results.details.length > 0 && (
-                            <div className="mt-4 border rounded-lg overflow-hidden">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {batchGenerationStatus.results.details.map((detail: BatchGenerationDetail, index: number) => (
-                                            <tr key={index}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{detail.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {detail.status === 'success' ? (
-                                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                            Éxito
-                                                        </span>
-                                                    ) : (
-                                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                            Error
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {detail.error || '-'}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Loading state */}
-                {loading && (
-                    <div className="p-8 rounded-lg flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                    </div>
-                )}
-
-                {/* Error state */}
-                {error && (
-                    <div className="bg-red-50 p-4 rounded-lg border border-red-200 text-red-700">
-                        <p>{error}</p>
-                    </div>
-                )}
-
-                {/* Pending Loans List */}
-                {!loading && !error && pendingDocumentsLoans?.loans && (
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="p-4 border-b">
-                            <h2 className="font-medium text-gray-800">
-                                Lista de solicitudes pendientes ({pendingDocumentsLoans.loans.length})
-                            </h2>
-                        </div>
-
-                        {pendingDocumentsLoans.loans.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    {isDownloaded == true && (
+                        <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-green-50 rounded-full flex items-center justify-center">
+                                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
-                                <h3 className="mt-4 text-lg font-medium text-gray-900">No hay solicitudes pendientes</h3>
-                                <p className="mt-1 text-gray-500">
-                                    Todas las solicitudes de préstamo tienen sus documentos generados.
-                                </p>
                             </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {pendingDocumentsLoans.loans.map((loan: ScalarLoanApplication) => (
-                                            <tr key={loan.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                                            {loan.user?.avatar && loan.user.avatar !== "No definido" ? (
-                                                                <img
-                                                                    src={loan.user.avatar}
-                                                                    alt={getFullName(loan.user)}
-                                                                    className="h-10 w-10 rounded-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <FaUserAlt className="text-gray-500" />
-                                                            )}
-                                                        </div>
-                                                        <div className="ml-4">
-                                                            <div className="text-sm font-medium text-gray-900">
-                                                                {getFullName(loan.user as ScalarClient)}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900 flex items-center">
-                                                        <FaEnvelope className="mr-2 text-gray-400" />
-                                                        {loan?.user?.email}
-                                                    </div>
-                                                    {loan?.user?.phone && loan.user.phone !== "No definido" && (
-                                                        <div className="text-sm text-gray-500 flex items-center mt-1">
-                                                            <FaPhone className="mr-2 text-gray-400" />
-                                                            {loan.user.phone}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        ${parseInt(loan.cantity).toLocaleString('es-CO')}
-                                                    </div>
-                                                    {loan.newCantity && (
-                                                        <div className="text-sm text-green-600">
-                                                            Aprobado: ${parseInt(loan.newCantity).toLocaleString('es-CO')}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${loan.status === 'Aprobado'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : loan.status === 'Aplazado'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : 'bg-blue-100 text-blue-800'
-                                                        }`}>
-                                                        {loan.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {formatDate(String(loan.created_at))}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            <p className="text-gray-600 font-medium">Descarga completada</p>
+                            <p className="text-gray-500 text-sm mt-1">Todos los documentos han sido descargados</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </SidebarLayout>
     );
