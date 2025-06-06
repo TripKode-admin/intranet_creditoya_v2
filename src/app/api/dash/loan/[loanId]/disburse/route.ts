@@ -11,12 +11,13 @@ interface ApiResponse {
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { loanId: string } }
+    context: { params: Promise<{ loanId: string }> }
 ) {
     const token = await validateToken();
 
     try {
-        const { loanId } = params;
+        // Await params en Next.js 15
+        const { loanId } = await context.params;
 
         console.log('🔍 Disbursing loan with loanId:', loanId);
 
