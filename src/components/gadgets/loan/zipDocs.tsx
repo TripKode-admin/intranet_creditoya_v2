@@ -5,7 +5,7 @@ import useProof from '@/hooks/dashboard/useProof';
 import { CiFileOn } from 'react-icons/ci';
 
 const NamesDocs = [
-    "Sobre Prestamo",
+    "Gestion de cobro",
     "Carta de instrucciones",
     "Autorizacion de pago",
     "Pagare"

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { cookies } from 'next/headers';
 import { validateToken } from '@/lib/ValidateAuth';
 
 // Define una interfaz para la respuesta

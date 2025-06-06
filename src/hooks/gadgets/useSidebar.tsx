@@ -8,7 +8,8 @@ export type optionTypes =
     "prestamos" |
     "clientes" |
     "soporte" |
-    "comprobantes"
+    "comprobantes" |
+    "disburse"
 
 export interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -77,6 +78,10 @@ function useSideBar() {
             setActivePage('soporte');
         } else if (pathname === "/dashboard/soporte/error") {
             setActivePage('soporte');
+        } else if (pathname === "/dashboard/disburse") {
+            setActivePage('disburse');
+        } else if (pathname === "/dashboard/soporte/sistema/backups") {
+            setActivePage('soporte');
         }
 
         // Set initial sidebar state based on screen size
@@ -106,6 +111,8 @@ function useSideBar() {
             router.push("/dashboard/soporte");
         } else if (option === "comprobantes") {
             router.push("/dashboard/comprobantes");
+        } else if (option === "disburse") {
+            router.push("/dashboard/disburse");
         }
     }
 

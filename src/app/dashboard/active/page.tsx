@@ -214,7 +214,6 @@ function ActiveSection() {
 
                                             <div className="flex flex-col">
                                                 <div className="flex items-center mb-1">
-                                                    <FiDollarSign className="mr-1 text-gray-500" />
                                                     <span className="font-medium">{formatCurrency(item.loanApplication.cantity)}</span>
                                                 </div>
                                                 {item.loanApplication.newCantity && (

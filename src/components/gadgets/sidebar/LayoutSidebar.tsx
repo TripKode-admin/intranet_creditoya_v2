@@ -12,6 +12,7 @@ import {
     FiCopy,
     FiChevronLeft
 } from 'react-icons/fi';
+import { IoWalletOutline } from 'react-icons/io5';
 import { LiaFileInvoiceDollarSolid } from 'react-icons/lia';
 import { TbHistory, TbSettings } from 'react-icons/tb';
 
@@ -63,6 +64,12 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                             text="Solicitudes"
                             isActive={activePage === 'solicitudes'}
                             onClick={() => selectOption('solicitudes')}
+                        />
+                        <SidebarItem
+                            icon={<IoWalletOutline size={20} />}
+                            text="Desembolso"
+                            isActive={activePage === 'disburse'}
+                            onClick={() => selectOption('disburse')}
                         />
                         <SidebarItem
                             icon={<FiCopy size={20} />}
@@ -142,6 +149,11 @@ const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
                             icon={<FiFileText size={20} />}
                             isActive={activePage === 'solicitudes'}
                             onClick={() => handleIconSidebarClick('solicitudes')}
+                        />
+                        <IconSidebarItem
+                            icon={<IoWalletOutline size={20} />}
+                            isActive={activePage === 'disburse'}
+                            onClick={() => handleIconSidebarClick('disburse')}
                         />
                         <IconSidebarItem
                             icon={<FiCopy size={20} />}

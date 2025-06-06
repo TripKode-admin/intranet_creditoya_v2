@@ -9,14 +9,45 @@ interface AdjustAmountModalProps {
     setAdjustModalOpen: (isOpen: boolean) => void;
 }
 
-export const AdjustAmountModal = ({ 
-    newAmount, 
-    adjustReason, 
-    setNewAmount, 
-    setAdjustReason, 
-    handleAdjust, 
-    setAdjustModalOpen 
+// Función para formatear número a pesos colombianos
+const formatToCOP = (value: string): string => {
+    // Remover todo excepto números
+    const numericValue = value.replace(/[^\d]/g, '');
+    
+    if (!numericValue) return '';
+    
+    // Convertir a número y formatear con separadores de miles
+    const number = parseInt(numericValue);
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(number);
+};
+
+// Función para obtener solo el valor numérico
+const getNumericValue = (formattedValue: string): string => {
+    return formattedValue.replace(/[^\d]/g, '');
+};
+
+export const AdjustAmountModal = ({
+    newAmount,
+    adjustReason,
+    setNewAmount,
+    setAdjustReason,
+    handleAdjust,
+    setAdjustModalOpen
 }: AdjustAmountModalProps) => {
+    
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputValue = e.target.value;
+        const numericValue = getNumericValue(inputValue);
+        
+        // Guardar solo el valor numérico en el estado
+        setNewAmount(numericValue);
+    };
+
     return (
         <ModalWrapper onClose={() => setAdjustModalOpen(false)}>
             <div className="relative bg-white p-6 rounded-lg shadow-lg z-50 w-full max-w-md mx-auto">
@@ -25,8 +56,8 @@ export const AdjustAmountModal = ({
                     type="text"
                     className="w-full border border-gray-300 p-2 rounded mb-4 focus:outline-none focus:border-blue-500"
                     placeholder="Nuevo monto"
-                    value={newAmount}
-                    onChange={(e) => setNewAmount(e.target.value)}
+                    value={newAmount ? formatToCOP(newAmount) : ''}
+                    onChange={handleAmountChange}
                 />
                 <textarea
                     className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-blue-500"

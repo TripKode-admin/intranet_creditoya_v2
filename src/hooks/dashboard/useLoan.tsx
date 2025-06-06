@@ -26,67 +26,67 @@ function useLoan({ loanId, clientId }: { loanId: string, clientId: string }) {
     const router = useRouter();
     const { user } = useAuth();
 
-    useEffect(() => {
-        const fetchLoanData = async () => {
-            try {
-                setLoading(true);
-                const response = await axios.get(
-                    `/api/dash/loan?loan_id=${loanId}&user_id=${clientId}`,
-                    { withCredentials: true }
-                );
+    const fetchLoanData = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(
+                `/api/dash/loan?loan_id=${loanId}&user_id=${clientId}`,
+                { withCredentials: true }
+            );
 
-                console.log(response.data.data)
+            console.log(response)
 
-                if (response.data.success) {
-                    const loanData: ScalarLoanApplication = response.data.data;
-                    setLoanApplication({
-                        id: loanData.id,
-                        status: loanData.status,
-                        cantity: loanData.cantity,
-                        newCantity: loanData.newCantity,
-                        reasonReject: loanData.reasonReject,
-                        reasonChangeCantity: loanData.reasonChangeCantity,
-                        fisrt_flyer: loanData.fisrt_flyer,
-                        second_flyer: loanData.second_flyer,
-                        phone: loanData.phone,
-                        third_flyer: loanData.third_flyer,
-                        labor_card: loanData.labor_card,
-                        created_at: loanData.created_at,
-                        userId: loanData.userId ?? "",
-                        upid_first_flayer: loanData.upid_first_flyer ?? "",
-                        upid_second_flyer: loanData.upid_second_flyer ?? "",
-                        upid_third_flayer: loanData.upid_third_flyer ?? "",
-                        upid_labor_card: loanData.upid_labor_card ?? "",
-                        updated_at: loanData.updated_at ?? "",
-                        approved_at: loanData.approved_at ?? "",
-                        rejected_at: loanData.rejected_at ?? "",
-                        adjusted_at: loanData.adjusted_at ?? "",
-                        adjusted_by: loanData.adjusted_by ?? "",
-                        rejected_by: loanData.rejected_by ?? "",
-                        approved_by: loanData.approved_by ?? "",
-                        entity: loanData.entity ?? "",
-                        terms_and_conditions: loanData.terms_and_conditions ?? false,
-                        signature: loanData.signature ?? "",
-                        upSignatureId: loanData.upSignatureId ?? "",
-                        bankSavingAccount: loanData.bankSavingAccount ?? "",
-                        bankNumberAccount: loanData.bankNumberAccount ?? "",
-                        user: loanData.user,
-                        GeneratedDocuments: Array.isArray(loanData.GeneratedDocuments) && loanData.GeneratedDocuments.length > 0
-                            ? loanData.GeneratedDocuments[0] as GeneratedDocuments
-                            : undefined
-                    });
-                    setClient(loanData.user as ScalarClient);
-                } else {
-                    setError("No se pudo obtener la información del préstamo");
-                }
-            } catch (error) {
-                setError("Error al cargar los datos del préstamo");
-                console.error(error);
-            } finally {
-                setLoading(false);
+            if (response.data.success) {
+                const loanData: ScalarLoanApplication = response.data.data;
+                setLoanApplication({
+                    id: loanData.id,
+                    status: loanData.status,
+                    cantity: loanData.cantity,
+                    newCantity: loanData.newCantity,
+                    reasonReject: loanData.reasonReject,
+                    reasonChangeCantity: loanData.reasonChangeCantity,
+                    fisrt_flyer: loanData.fisrt_flyer,
+                    second_flyer: loanData.second_flyer,
+                    phone: loanData.phone,
+                    third_flyer: loanData.third_flyer,
+                    labor_card: loanData.labor_card,
+                    created_at: loanData.created_at,
+                    userId: loanData.userId ?? "",
+                    upid_first_flayer: loanData.upid_first_flyer ?? "",
+                    upid_second_flyer: loanData.upid_second_flyer ?? "",
+                    upid_third_flayer: loanData.upid_third_flyer ?? "",
+                    upid_labor_card: loanData.upid_labor_card ?? "",
+                    updated_at: loanData.updated_at ?? "",
+                    approved_at: loanData.approved_at ?? "",
+                    rejected_at: loanData.rejected_at ?? "",
+                    adjusted_at: loanData.adjusted_at ?? "",
+                    adjusted_by: loanData.adjusted_by ?? "",
+                    rejected_by: loanData.rejected_by ?? "",
+                    approved_by: loanData.approved_by ?? "",
+                    entity: loanData.entity ?? "",
+                    terms_and_conditions: loanData.terms_and_conditions ?? false,
+                    signature: loanData.signature ?? "",
+                    upSignatureId: loanData.upSignatureId ?? "",
+                    bankSavingAccount: loanData.bankSavingAccount ?? "",
+                    bankNumberAccount: loanData.bankNumberAccount ?? "",
+                    user: loanData.user,
+                    GeneratedDocuments: Array.isArray(loanData.GeneratedDocuments) && loanData.GeneratedDocuments.length > 0
+                        ? loanData.GeneratedDocuments[0] as GeneratedDocuments
+                        : undefined
+                });
+                setClient(loanData.user as ScalarClient);
+            } else {
+                setError("No se pudo obtener la información del préstamo");
             }
-        };
+        } catch (error) {
+            setError("Error al cargar los datos del préstamo");
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         if (loanId) {
             fetchLoanData();
         }

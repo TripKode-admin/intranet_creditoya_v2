@@ -28,6 +28,8 @@ export type ScalarLoanApplication = {
     terms_and_conditions: boolean;
     clientInfo?: ScalarClient;
     GeneratedDocuments?: GeneratedDocuments
+    city?: string;
+    residence_address?: string;
     phone: string;
     created_at: Date;
     updated_at: Date;
