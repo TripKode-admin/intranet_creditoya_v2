@@ -1,4 +1,3 @@
-// app/api/dash/loan/[loanId]/disburse/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { validateToken } from '@/lib/ValidateAuth';
@@ -16,7 +15,6 @@ export async function PUT(
     const token = await validateToken();
 
     try {
-        // Await params en Next.js 15
         const { loanId } = await context.params;
 
         console.log('🔍 Disbursing loan with loanId:', loanId);
