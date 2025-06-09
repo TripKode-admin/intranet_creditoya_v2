@@ -15,10 +15,10 @@ import {
 } from 'lucide-react';
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
 import { ScalarLoanApplication } from '@/types/loan';
-import { useApprovedLoans } from '@/hooks/dashboard/useDisbursed';
 import { useRouter } from 'next/navigation';
 import { handleKeyToStringBank } from '@/handlers/typeBank';
 import Image from 'next/image';
+import { usePendingDisbursement } from '@/hooks/dashboard/useDisbursed';
 
 // Componente de Card para cada préstamo
 const LoanCard = ({
@@ -251,7 +251,7 @@ function DisbursePage() {
         // handlerIsDisbursed,
         disburseLoan,
         refetch
-    } = useApprovedLoans({
+    } = usePendingDisbursement({
         page: 1,
         pageSize: 6,
         search: ''

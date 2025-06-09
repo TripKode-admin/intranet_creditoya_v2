@@ -1,40 +1,67 @@
+import { validateToken } from "@/lib/ValidateAuth";
 import axios from "axios";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const token = await cookies();
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    // Obtener el token correctamente
+    const token = validateToken();
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Token de autenticación no encontrado' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
     const documentId = searchParams.get('document_id');
 
-    // We need to handle the file download differently since we're returning a binary file
+    if (!documentId) {
+      return NextResponse.json(
+        { error: 'document_id es requerido' },
+        { status: 400 }
+      );
+    }
+
+    // Realizar la petición al backend
     const response = await axios.get(
       `${process.env.GATEWAY_API}/pdfs/document/${documentId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
+          // Solo incluir el header Cookie si es necesario para tu backend
           Cookie: `intranet-token=${token}`
         },
-        responseType: 'arraybuffer'
-      },
+        responseType: 'arraybuffer',
+        timeout: 30000 // 30 segundos timeout
+      }
     );
 
-    // Forward the headers and binary content
+    // Crear la respuesta con los headers correctos
     return new NextResponse(response.data, {
+      status: 200,
       headers: {
-        'Content-Type': response.headers['content-type'],
-        'Content-Disposition': response.headers['content-disposition'],
-        'Content-Length': response.headers['content-length'],
+        'Content-Type': response.headers['content-type'] || 'application/octet-stream',
+        'Content-Disposition': response.headers['content-disposition'] || 'attachment',
+        'Content-Length': response.headers['content-length'] || response.data.byteLength.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
+
   } catch (error) {
     console.error("Error downloading document:", error);
 
     if (axios.isAxiosError(error)) {
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || 'Error downloading document';
+
       return NextResponse.json(
-        { error: error.response?.data?.message || 'Error downloading document' },
-        { status: error.response?.status || 500 }
+        { error: message },
+        { status }
       );
     }
 

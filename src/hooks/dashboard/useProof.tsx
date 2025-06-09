@@ -301,21 +301,18 @@ function useProof() {
 
   const downloadDocumentById = async (documentId: string) => {
     try {
-      // Crear una solicitud con fetch y configurar withCredentials
-      const response = await fetch(`/api/dash/pdfs/document?document_id=${documentId}`, {
-        method: 'GET',
-        credentials: 'include', // Esto configura withCredentials a true
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Crear una solicitud con axios y configurar responseType: 'blob'
+      const response = await axios.get(`/api/dash/pdfs/document?document_id=${documentId}`, {
+        withCredentials: true,
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
+      if (!response.data) {
         throw new Error(`Error en la descarga: ${response.status}`);
       }
 
       // Obtener el blob de la respuesta
-      const blob = await response.blob();
+      const blob = response.data;
 
       // Crear un objeto URL para el blob
       const url = window.URL.createObjectURL(blob);
@@ -325,7 +322,7 @@ function useProof() {
       a.href = url;
 
       // Obtener el nombre del archivo desde los headers si está disponible
-      const contentDisposition = response.headers.get('content-disposition');
+      const contentDisposition = response.headers['content-disposition'];
       const fileName = contentDisposition
         ? contentDisposition.split('filename=')[1].replace(/"/g, '')
         : `document_${documentId}.pdf`;

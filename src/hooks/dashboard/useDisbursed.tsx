@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { ScalarLoanApplication } from '@/types/loan';
 
-interface UseApprovedLoansParams {
+interface UsePendingDisbursementParams {
     page?: number;
     pageSize?: number;
     search?: string;
 }
 
-interface ApprovedLoansResponse {
+interface PendingDisbursementResponse {
     success: boolean;
     data: ScalarLoanApplication[];
     total: number;
@@ -21,7 +21,7 @@ interface ApprovedLoansResponse {
     error?: string;
 }
 
-interface UseApprovedLoansReturn {
+interface UsePendingDisbursementReturn {
     loans: ScalarLoanApplication[];
     loading: boolean;
     error: string | null;
@@ -45,11 +45,11 @@ const apiClient = axios.create({
     timeout: 10000, // 10 segundos de timeout
 });
 
-export const useApprovedLoans = ({
+export const usePendingDisbursement = ({
     page = 1,
     pageSize = 10,
     search = ''
-}: UseApprovedLoansParams = {}): UseApprovedLoansReturn => {
+}: UsePendingDisbursementParams = {}): UsePendingDisbursementReturn => {
     const [loans, setLoans] = useState<ScalarLoanApplication[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -59,32 +59,34 @@ export const useApprovedLoans = ({
     const [currentPageSize, setCurrentPageSize] = useState(pageSize);
     const [searchQuery, setSearchQuery] = useState(search);
 
-    // Memoizar la función fetchApprovedLoans para evitar recreaciones innecesarias
-    const fetchApprovedLoans = useCallback(async () => {
+    // Función para obtener préstamos pendientes de desembolso
+    const fetchPendingDisbursement = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         try {
             const params = {
-                status: 'Aprobado',
                 page: currentPage.toString(),
                 pageSize: currentPageSize.toString(),
                 ...(searchQuery && { search: searchQuery }),
             };
 
-            const response = await apiClient.get<ApprovedLoansResponse>('/api/dash/status', {
-                params,
-            });
+            const response = await apiClient.get<PendingDisbursementResponse>(
+                '/api/dash/loan/disbursed',
+                { params }
+            );
 
             const data = response.data;
 
             if (!data.success) {
-                throw new Error(data.error || 'Error al obtener los préstamos');
+                throw new Error(data.error || 'Error al obtener los préstamos pendientes de desembolso');
             }
 
             setLoans(data.data || []);
             setTotal(data.total || 0);
             setTotalPages(data.totalPages || 0);
+
+            console.log(`✅ Cargados ${data.data?.length || 0} préstamos pendientes de desembolso`);
         } catch (err) {
             let errorMessage = 'Error desconocido';
 
@@ -92,7 +94,7 @@ export const useApprovedLoans = ({
                 if (err.code === 'ECONNABORTED') {
                     errorMessage = 'Tiempo de espera agotado. Intenta de nuevo.';
                 } else if (err.response?.status === 404) {
-                    errorMessage = 'Endpoint no encontrado. Verifica que la ruta /api/dash/status esté configurada correctamente.';
+                    errorMessage = 'Endpoint no encontrado. Verifica que la ruta esté configurada correctamente.';
                 } else if (err.response?.data?.error) {
                     errorMessage = err.response.data.error;
                 } else if (err.response?.statusText) {
@@ -105,7 +107,7 @@ export const useApprovedLoans = ({
             }
 
             setError(errorMessage);
-            console.error('Error fetching approved loans:', err);
+            console.error('❌ Error fetching pending disbursement loans:', err);
         } finally {
             setLoading(false);
         }
@@ -113,12 +115,12 @@ export const useApprovedLoans = ({
 
     // Effect para cargar datos cuando cambian los parámetros
     useEffect(() => {
-        fetchApprovedLoans();
-    }, [fetchApprovedLoans]);
+        fetchPendingDisbursement();
+    }, [fetchPendingDisbursement]);
 
     const refetch = useCallback(() => {
-        fetchApprovedLoans();
-    }, [fetchApprovedLoans]);
+        fetchPendingDisbursement();
+    }, [fetchPendingDisbursement]);
 
     const setPage = useCallback((page: number) => {
         setCurrentPage(page);
@@ -134,18 +136,17 @@ export const useApprovedLoans = ({
         setCurrentPage(1); // Reset to first page when changing page size
     }, []);
 
-    // Función para desembolsar un préstamo - ACTUALIZADA
+    // Función para desembolsar un préstamo
     const disburseLoan = useCallback(async (loanId: string): Promise<ScalarLoanApplication> => {
         try {
             console.log('🔍 Disbursing loan:', loanId);
 
-            // URL corregida para el endpoint de desembolso
             const response = await apiClient.put(`/api/dash/loan/${loanId}/disburse`);
 
             console.log('✅ Disburse response:', response.data);
 
-            // Actualizar la lista local de préstamos después del desembolso exitoso
-            await fetchApprovedLoans();
+            // Actualizar la lista después del desembolso exitoso
+            await fetchPendingDisbursement();
 
             return response.data;
         } catch (err) {
@@ -168,9 +169,9 @@ export const useApprovedLoans = ({
             console.error('❌ Error disbursing loan:', err);
             throw new Error(errorMessage);
         }
-    }, [fetchApprovedLoans]);
+    }, [fetchPendingDisbursement]);
 
-    // Memoizar el objeto de retorno para evitar recreaciones innecesarias
+    // Memoizar el objeto de retorno
     const returnValue = useMemo(() => ({
         loans,
         loading,
