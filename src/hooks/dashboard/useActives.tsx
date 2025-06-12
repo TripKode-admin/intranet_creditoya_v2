@@ -234,6 +234,61 @@ function useActives() {
         </div>
     );
 
+    // Función para generar números de página para paginación
+    const getPageNumbers = () => {
+        const totalPages = pagination.totalPages;
+        const currentPage = pagination.currentPage;
+        const maxPageNumbers = 5;
+        const pageNumbers = [];
+
+        if (totalPages <= maxPageNumbers) {
+            // Mostrar todos los números de página si el total es menor que maxPageNumbers
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
+            }
+        } else {
+            // Incluir siempre primera página, última página, página actual y
+            // una o dos páginas a cada lado de la página actual
+
+            let startPage = Math.max(2, currentPage - 1);
+            let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+            // Ajustar si currentPage está cerca del principio
+            if (currentPage <= 2) {
+                endPage = Math.min(totalPages - 1, 4);
+            }
+
+            // Ajustar si currentPage está cerca del final
+            if (currentPage >= totalPages - 1) {
+                startPage = Math.max(2, totalPages - 3);
+            }
+
+            // Incluir siempre la página 1
+            pageNumbers.push(1);
+
+            // Añadir elipsis si es necesario
+            if (startPage > 2) {
+                pageNumbers.push('...');
+            }
+
+            // Añadir páginas intermedias
+            for (let i = startPage; i <= endPage; i++) {
+                pageNumbers.push(i);
+            }
+
+            // Añadir elipsis si es necesario
+            if (endPage < totalPages - 1) {
+                pageNumbers.push('...');
+            }
+
+            // Incluir siempre la última página
+            pageNumbers.push(totalPages);
+        }
+
+        return pageNumbers;
+    };
+
+
     return {
         activeTab,
         searchQuery: inputValue,
@@ -251,6 +306,7 @@ function useActives() {
         getTimeSinceUpdate,
         handleManualRefresh,
         UpdateIndicator,
+        getPageNumbers,
         router,
     };
 }

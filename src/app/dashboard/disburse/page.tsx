@@ -27,7 +27,6 @@ function DisbursePageLoading() {
     );
 }
 
-
 function PreDisbursePage() {
     // Estados locales para la UI
     const [searchTerm, setSearchTerm] = useState('');
