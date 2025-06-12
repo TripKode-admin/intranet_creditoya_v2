@@ -22,6 +22,32 @@ interface DetailItemProps {
     value: string | number;
 }
 
+// Función helper para obtener los teléfonos válidos
+const getValidPhones = (loanPhone: string | undefined, clientPhone: string | undefined): string => {
+    // Si loanApplication.phone existe, intentar parsearlo
+    if (loanPhone) {
+        try {
+            const phoneArray = JSON.parse(loanPhone);
+            if (Array.isArray(phoneArray)) {
+                // Filtrar valores vacíos y obtener todos los teléfonos válidos
+                const validPhones = phoneArray.filter(phone => phone && phone.trim() !== "");
+                if (validPhones.length > 0) {
+                    // Unir todos los teléfonos válidos con " | "
+                    return validPhones.join(" | ");
+                }
+            }
+        } catch (error) {
+            // Si no se puede parsear, usar como string directo
+            if (loanPhone.trim() !== "") {
+                return loanPhone;
+            }
+        }
+    }
+
+    // Si no hay teléfono válido en loanApplication, usar el del cliente
+    return clientPhone || "No disponible";
+};
+
 export const LoanDetails = ({ loanApplication, client }: { loanApplication: ScalarLoanApplication; client: ScalarClient }) => {
     return (
         <div className="w-full md:w-[400px] flex-grow mb-10">
@@ -43,7 +69,7 @@ export const LoanDetails = ({ loanApplication, client }: { loanApplication: Scal
                 <DetailItem
                     icon={<IoMdCall className="min-w-8 text-4xl text-gray-500 drop-shadow-md" />}
                     label="Teléfono"
-                    value={loanApplication.phone as string || client.phone as string}
+                    value={getValidPhones(loanApplication.phone as string, client.phone as string)}
                 />
 
                 <DetailItem

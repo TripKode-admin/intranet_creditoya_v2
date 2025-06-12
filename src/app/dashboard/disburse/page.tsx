@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     User,
     CreditCard,
@@ -11,14 +11,29 @@ import {
     Loader2,
     Search,
     CheckCircle,
-    Clock
+    Clock,
+    MoreHorizontal
 } from 'lucide-react';
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
 import { ScalarLoanApplication } from '@/types/loan';
 import { useRouter } from 'next/navigation';
-import { handleKeyToStringBank } from '@/handlers/typeBank';
+import { BankTypes, handleKeyToStringBank } from '@/handlers/typeBank';
 import Image from 'next/image';
 import { usePendingDisbursement } from '@/hooks/dashboard/useDisbursed';
+
+interface PaginationProps {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+    loading?: boolean;
+    showInfo?: boolean;
+    showPageSizeSelector?: boolean;
+    pageSize?: number;
+    onPageSizeChange?: (size: number) => void;
+    pageSizeOptions?: number[];
+    total?: number;
+    className?: string;
+}
 
 // Componente de Card para cada préstamo
 const LoanCard = ({
@@ -38,9 +53,12 @@ const LoanCard = ({
     const formatCurrency = (amount: string) => {
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
-            currency: 'COP'
+            currency: 'COP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         }).format(Number(amount));
     };
+
 
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('es-CO', {
@@ -83,7 +101,7 @@ const LoanCard = ({
                 </div>
                 <div className="flex flex-col gap-2">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 self-start">
-                        {loan.loanApplication?.status}
+                        {loan.status}
                     </span>
                     {isDisbursed && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 self-start">
@@ -98,19 +116,24 @@ const LoanCard = ({
                 <div className="text-center sm:text-left">
                     <p className="text-sm text-gray-500 mb-1">Monto aprobado</p>
                     <p className="font-semibold text-lg text-gray-900">
-                        {formatCurrency(loan.loanApplication?.cantity || '0')}
+                        {formatCurrency(
+                            loan.reasonChangeCantity && loan.newCantity
+                                ? loan.newCantity
+                                : loan.cantity || '0'
+                        )}
                     </p>
                 </div>
+
                 <div className="text-center sm:text-left">
                     <p className="text-sm text-gray-500 mb-1">Entidad bancaria</p>
-                    <p className="font-medium text-gray-900 truncate" title={loan.loanApplication?.entity}>
-                        {handleKeyToStringBank(loan.loanApplication?.entity)}
+                    <p className="font-medium text-gray-900 truncate" title={loan.entity}>
+                        {handleKeyToStringBank(loan.entity as BankTypes)}
                     </p>
                 </div>
                 <div className="text-center sm:text-left">
                     <p className="text-sm text-gray-500 mb-1">Fecha de aprobación</p>
                     <p className="font-medium text-gray-900">
-                        {formatDate(loan.loanApplication?.created_at)}
+                        {formatDate(loan.created_at)}
                     </p>
                 </div>
             </div>
@@ -145,7 +168,7 @@ const LoanCard = ({
                     )}
                 </button>
                 <button
-                    onClick={() => router.push(`/dashboard/loan/${loan.loanApplication?.id}?user_id=${loan.userId}`)}
+                    onClick={() => router.push(`/dashboard/loan/${loan.id}?userId=${loan.userId}`)}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
                 >
                     <Info className="w-4 h-4" />
@@ -156,123 +179,304 @@ const LoanCard = ({
     );
 };
 
-// Componente de Paginación
 const Pagination = ({
     currentPage,
     totalPages,
-    onPageChange
-}: {
-    currentPage: number;
-    totalPages: number;
-    onPageChange: (page: number) => void;
-}) => {
-    const getVisiblePages = () => {
-        const delta = 2;
+    onPageChange,
+    loading = false,
+    showInfo = true,
+    showPageSizeSelector = false,
+    pageSize = 6,
+    onPageSizeChange,
+    pageSizeOptions = [6, 12, 24, 48],
+    total = 0,
+    className = ""
+}: PaginationProps) => {
+    const [isClient, setIsClient] = useState(false);
+
+    // Efecto para detectar si estamos en el cliente (hidratación)
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    // Función optimizada para obtener páginas visibles
+    const getVisiblePages = useCallback(() => {
+        if (totalPages <= 1) return [];
+
+        // Responsive delta basado en viewport
+        const delta = !isClient || window.innerWidth < 640 ? 1 : 2;
         const range = [];
         const rangeWithDots = [];
 
-        for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+        const start = Math.max(2, currentPage - delta);
+        const end = Math.min(totalPages - 1, currentPage + delta);
+
+        // Construir rango de páginas centrales
+        for (let i = start; i <= end; i++) {
             range.push(i);
         }
 
-        if (currentPage - delta > 2) {
-            rangeWithDots.push(1, '...');
-        } else {
+        // Siempre incluir primera página
+        if (totalPages > 1) {
             rangeWithDots.push(1);
         }
 
-        rangeWithDots.push(...range);
+        // Agregar dots si hay gap después de la primera página
+        if (start > 2) {
+            rangeWithDots.push('...');
+        }
 
-        if (currentPage + delta < totalPages - 1) {
-            rangeWithDots.push('...', totalPages);
-        } else {
+        // Agregar páginas centrales (excluyendo la primera si ya está incluida)
+        range.forEach(page => {
+            if (page !== 1) {
+                rangeWithDots.push(page);
+            }
+        });
+
+        // Agregar dots si hay gap antes de la última página
+        if (end < totalPages - 1) {
+            rangeWithDots.push('...');
+        }
+
+        // Siempre incluir última página (si no está ya incluida)
+        if (totalPages > 1 && !rangeWithDots.includes(totalPages)) {
             rangeWithDots.push(totalPages);
         }
 
-        return rangeWithDots.filter((page, index, array) => array.indexOf(page) === index);
-    };
+        return rangeWithDots;
+    }, [currentPage, totalPages, isClient]);
 
+    // Memoizar páginas visibles
+    const visiblePages = useMemo(() => getVisiblePages(), [getVisiblePages]);
+
+    // Handlers optimizados
+    const handlePreviousPage = useCallback(() => {
+        if (currentPage > 1 && !loading) {
+            onPageChange(currentPage - 1);
+        }
+    }, [currentPage, loading, onPageChange]);
+
+    const handleNextPage = useCallback(() => {
+        if (currentPage < totalPages && !loading) {
+            onPageChange(currentPage + 1);
+        }
+    }, [currentPage, totalPages, loading, onPageChange]);
+
+    const handlePageClick = useCallback((page: number | string) => {
+        if (typeof page === 'number' && page !== currentPage && !loading) {
+            onPageChange(page);
+        }
+    }, [currentPage, loading, onPageChange]);
+
+    const handlePageSizeChange = useCallback((newSize: number) => {
+        if (onPageSizeChange && newSize !== pageSize && !loading) {
+            console.log(`📏 Pagination - Changing page size to: ${newSize}`);
+            onPageSizeChange(newSize);
+        }
+    }, [onPageSizeChange, pageSize, loading]);
+
+    // Función para calcular el rango de elementos mostrados
+    const getItemRange = useCallback(() => {
+        if (total === 0) return { start: 0, end: 0 };
+
+        const start = (currentPage - 1) * pageSize + 1;
+        const end = Math.min(currentPage * pageSize, total);
+        return { start, end };
+    }, [currentPage, pageSize, total]);
+
+    const itemRange = getItemRange();
+
+    // No renderizar si no hay páginas o solo hay una
     if (totalPages <= 1) return null;
 
     return (
-        <div className="flex items-center justify-center space-x-1 sm:space-x-2 mt-8">
-            <button
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+        <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 ${className}`}>
+            {/* Información de página y elementos (lado izquierdo) */}
+            {showInfo && (
+                <div className="flex flex-col sm:flex-row items-center gap-2 text-sm text-gray-600">
+                    <div className="hidden sm:block">
+                        Página {currentPage} de {totalPages}
+                    </div>
+                    {total > 0 && (
+                        <div className="text-xs sm:text-sm">
+                            Mostrando {itemRange.start}-{itemRange.end} de {total} elementos
+                        </div>
+                    )}
+                </div>
+            )}
 
-            {getVisiblePages().map((page, index) => (
+            {/* Controles de paginación (centro) */}
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2">
+                {/* Botón Anterior */}
                 <button
-                    key={index}
-                    onClick={() => typeof page === 'number' && onPageChange(page)}
-                    disabled={page === '...'}
-                    className={`px-2 sm:px-3 py-2 rounded-lg text-sm font-medium transition-colors ${page === currentPage
-                        ? 'bg-blue-600 text-white'
-                        : page === '...'
-                            ? 'cursor-default'
-                            : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1 || loading}
+                    className="flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors duration-200"
+                    title="Página anterior"
+                    aria-label="Ir a página anterior"
                 >
-                    {page}
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline ml-1">Anterior</span>
                 </button>
-            ))}
 
-            <button
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+                {/* Números de página */}
+                <div className="flex items-center space-x-1">
+                    {visiblePages.map((page, index) => {
+                        const isCurrentPage = page === currentPage;
+                        const isDots = page === '...';
+
+                        return (
+                            <button
+                                key={`page-${index}-${page}`}
+                                onClick={() => handlePageClick(page)}
+                                disabled={isDots || loading}
+                                className={`
+                                    min-w-[2.5rem] h-10 px-2 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                                    ${isCurrentPage
+                                        ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-opacity-50'
+                                        : isDots
+                                            ? 'cursor-default text-gray-400 hover:bg-transparent'
+                                            : 'border border-gray-300 hover:bg-gray-50 text-gray-700 hover:border-gray-400 hover:shadow-sm'
+                                    }
+                                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+                                title={typeof page === 'number' ? `Ir a página ${page}` : undefined}
+                                aria-label={typeof page === 'number' ? `Ir a página ${page}` : undefined}
+                                aria-current={isCurrentPage ? 'page' : undefined}
+                            >
+                                {isDots ? <MoreHorizontal className="w-4 h-4" /> : page}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Botón Siguiente */}
+                <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages || loading}
+                    className="flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors duration-200"
+                    title="Página siguiente"
+                    aria-label="Ir a página siguiente"
+                >
+                    <span className="hidden sm:inline mr-1">Siguiente</span>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+            </div>
+
+            {/* Selector de tamaño de página (lado derecho) */}
+            {showPageSizeSelector && onPageSizeChange && (
+                <div className="flex items-center gap-2 text-sm">
+                    <label htmlFor="pageSize" className="text-gray-600 whitespace-nowrap">
+                        Por página:
+                    </label>
+                    <select
+                        id="pageSize"
+                        value={pageSize}
+                        onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                        disabled={loading}
+                        className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Seleccionar número de elementos por página"
+                    >
+                        {pageSizeOptions.map(size => (
+                            <option key={size} value={size}>
+                                {size}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Información mobile (solo en pantallas pequeñas) */}
+            <div className="sm:hidden text-sm text-gray-600">
+                {currentPage} / {totalPages}
+            </div>
+
+            {/* Indicador de carga */}
+            {loading && (
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        Cargando...
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 function DisbursePage() {
+    // Estados locales para la UI
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPageSize, setCurrentPageSize] = useState(6);
     const [disbursementStates, setDisbursementStates] = useState<Record<string, boolean>>({});
     const [processingStates, setProcessingStates] = useState<Record<string, boolean>>({});
     const [successMessage, setSuccessMessage] = useState<string>('');
 
+    // Estados para controlar las actualizaciones del hook
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Hook con valores dinámicos
     const {
         loans,
         loading,
         error,
         total,
         totalPages,
-        currentPage,
-        pageSize,
         setPage,
         setSearch,
         setPageSize,
-        // handlerIsDisbursed,
         disburseLoan,
         refetch
     } = usePendingDisbursement({
-        page: 1,
-        pageSize: 6,
-        search: ''
+        page: currentPage,
+        pageSize: currentPageSize,
+        search: searchQuery
     });
 
+    // Manejar búsqueda
     const handleSearch = (e?: React.KeyboardEvent | React.MouseEvent) => {
         if (e) e.preventDefault();
-        setSearch(searchTerm);
+        setSearchQuery(searchTerm.trim());
+        setCurrentPage(1); // Reset página al buscar
+        setPage(1);
+        setSearch(searchTerm.trim());
+    };
+
+    // Manejar cambio de página
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        setPage(page);
+    };
+
+    // Manejar cambio de tamaño de página
+    const handlePageSizeChange = (size: number) => {
+        setCurrentPageSize(size);
+        setCurrentPage(1); // Reset página al cambiar tamaño
+        setPage(1);
+        setPageSize(size);
+    };
+
+    // Limpiar búsqueda
+    const handleClearSearch = () => {
+        setSearchTerm('');
+        setSearchQuery('');
+        setCurrentPage(1);
+        setPage(1);
+        setSearch('');
     };
 
     const handleDisburse = async (loan: ScalarLoanApplication) => {
-        if (!loan.loanApplication?.id) {
+        if (!loan.id) {
             alert('Error: ID del préstamo no encontrado');
             return;
         }
 
-        const loanId = loan.loanApplication.id;
+        const loanId = loan.id;
 
         // Mostrar confirmación
         const isConfirmed = window.confirm(
-            `¿Estás seguro de que deseas confirmar el desembolso para ${loan.user?.names} ${loan.user?.firstLastName}?\n\nMonto: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(Number(loan.loanApplication?.cantity || '0'))}`
+            `¿Estás seguro de que deseas confirmar el desembolso para ${loan.user?.names} ${loan.user?.firstLastName}?\n\nMonto: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(Number(loan.cantity || '0'))}`
         );
 
         if (!isConfirmed) return;
@@ -334,14 +538,14 @@ function DisbursePage() {
                                 placeholder="Buscar por nombre, documento o entidad..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                onKeyDownCapture={(e) => e.key === 'Enter' && handleSearch(e)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <select
-                                value={pageSize}
-                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                value={currentPageSize}
+                                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                                 className="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value={6}>6 por página</option>
@@ -354,6 +558,14 @@ function DisbursePage() {
                             >
                                 Buscar
                             </button>
+                            {searchQuery && (
+                                <button
+                                    onClick={handleClearSearch}
+                                    className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
+                                >
+                                    Limpiar
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -362,6 +574,7 @@ function DisbursePage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6">
                     <p className="text-sm text-gray-600">
                         Mostrando {loans.length} de {total} préstamos aprobados
+                        {searchQuery && ` (filtrado por: "${searchQuery}")`}
                     </p>
                     <button
                         onClick={refetch}
@@ -399,7 +612,10 @@ function DisbursePage() {
                                         No se encontraron préstamos
                                     </h3>
                                     <p className="text-gray-500">
-                                        No hay préstamos aprobados que coincidan con tu búsqueda.
+                                        {searchQuery
+                                            ? `No hay préstamos que coincidan con "${searchQuery}"`
+                                            : "No hay préstamos aprobados pendientes de desembolso."
+                                        }
                                     </p>
                                 </div>
                             </div>
@@ -407,11 +623,11 @@ function DisbursePage() {
                             <div className="grid grid-cols-1 gap-4 sm:gap-6">
                                 {loans.map((loan) => (
                                     <LoanCard
-                                        key={loan.loanApplication?.id}
+                                        key={loan.id}
                                         loan={loan}
                                         onDisburse={handleDisburse}
-                                        isDisbursed={disbursementStates[loan.loanApplication?.id || ''] || false}
-                                        isProcessing={processingStates[loan.loanApplication?.id || ''] || false}
+                                        isDisbursed={loan.id ? disbursementStates[loan.id] || false : false}
+                                        isProcessing={loan.id ? processingStates[loan.id] || false : false}
                                     />
                                 ))}
                             </div>
@@ -421,7 +637,7 @@ function DisbursePage() {
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            onPageChange={setPage}
+                            onPageChange={handlePageChange}
                         />
                     </>
                 )}

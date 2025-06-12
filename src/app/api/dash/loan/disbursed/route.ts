@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
 
     try {
         const page = searchParams.get('page') || '1';
-        const pageSize = searchParams.get('pageSize') || '10';
+        const pageSize = searchParams.get('pageSize') || '6'; // Cambiado de '10' a '6'
         const search = searchParams.get('search') || '';
+
+        console.log('API Route - Params received:', { page, pageSize, search });
 
         // Construir URL con parámetros para el backend
         const params = new URLSearchParams({
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
 
         // Hacer la petición al backend de NestJS
         const response = await axios.get(
-            `${process.env.GATEWAY_API}/loans/disbursed/pending?${params.toString()}`,
+            `${process.env.GATEWAY_API}/loans/disbursed?${params.toString()}`, // Agregar params a la URL
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -44,30 +46,37 @@ export async function GET(request: NextRequest) {
             }
         );
 
+        console.log('Backend response:', response.data);
+
         if (response.data.success === false) throw new Error(response.data.error);
 
         // Construir la respuesta exitosa
         const apiResponse: ApiResponse = {
             success: true,
-            data: response.data.data,
-            total: response.data.total,
-            page: response.data.page,
-            pageSize: response.data.pageSize,
-            totalPages: response.data.totalPages,
+            data: response.data.data || [],
+            total: response.data.total || 0,
+            page: parseInt(page),
+            pageSize: parseInt(pageSize),
+            totalPages: Math.ceil((response.data.total || 0) / parseInt(pageSize)), // Calcular totalPages aquí si no viene del backend
         };
+
+        console.log('API Response to frontend:', apiResponse);
 
         return NextResponse.json(apiResponse);
     } catch (error) {
         console.error('Error al obtener préstamos pendientes de desembolso:', error);
 
         // Manejar el error y construir la respuesta de error
+        const page = parseInt(searchParams?.get('page') || '1');
+        const pageSize = parseInt(searchParams?.get('pageSize') || '6'); // Cambiado de '10' a '6'
+
         const apiResponse: ApiResponse = {
             success: false,
             error: error instanceof Error ? error.message : 'Error desconocido',
             data: [],
             total: 0,
-            page: parseInt(searchParams?.get('page') || '1'),
-            pageSize: parseInt(searchParams?.get('pageSize') || '10'),
+            page,
+            pageSize,
             totalPages: 0,
         };
 
