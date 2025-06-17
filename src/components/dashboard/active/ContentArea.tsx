@@ -46,8 +46,9 @@ function ContentActivePage() {
             ) : loanData.length > 0 ? (
                 <>
                     <div className="space-y-4">
-                        {loanData.map((item) => (
+                        {loanData.map((item, index) => (
                             <CardLoanState
+                                key={index}
                                 item={item}
                                 formatCurrency={formatCurrency}
                                 formatDate={formatDate}
