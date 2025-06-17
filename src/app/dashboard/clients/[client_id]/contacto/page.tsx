@@ -10,7 +10,25 @@ import { MdAlternateEmail } from 'react-icons/md';
 import { FaRegCircleUser } from 'react-icons/fa6';
 
 interface ContactProps { params: Promise<{ client_id: string }> }
-interface AttachmentFile { name: string; size: number; id: string; }
+interface AttachmentFile {
+    name: string;
+    size: number;
+    id: string;
+    file: File; // Agregamos el objeto File original
+}
+
+interface ApiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+}
+
+interface SendCustomEmailResponse {
+    to: string;
+    subject: string;
+    attachmentCount: number;
+}
 
 function ContactClientPage({ params }: ContactProps) {
     const resolveParams = use(params);
@@ -19,7 +37,9 @@ function ContactClientPage({ params }: ContactProps) {
 
     const [subject, setSubject] = useState("");
     const [message, setMessage] = useState("");
+    const [recipientName, setRecipientName] = useState("");
     const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +47,8 @@ function ContactClientPage({ params }: ContactProps) {
             const newFiles: AttachmentFile[] = Array.from(e.target.files).map(file => ({
                 name: file.name,
                 size: file.size,
-                id: Math.random().toString(36).substr(2, 9)
+                id: Math.random().toString(36).substr(2, 9),
+                file: file
             }));
             setAttachments([...attachments, ...newFiles]);
         }
@@ -43,10 +64,63 @@ function ContactClientPage({ params }: ContactProps) {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log({ subject, message, attachments });
-        alert("Funcionalidad en mantenimiento ...")
+
+        if (!clientData?.email) {
+            alert("No se encontró el email del cliente");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // Crear FormData
+            const formData = new FormData();
+            const fullname = `${clientData.names} ${clientData.firstLastName} ${clientData.secondLastName}`;
+
+            // Agregar campos requeridos
+            formData.append('email', clientData.email);
+            formData.append('subject', subject);
+            formData.append('message', message);
+            formData.append('recipientName', fullname);
+            formData.append('priority', "normal");
+
+            // Agregar archivos
+            attachments.forEach(attachment => {
+                formData.append('files', attachment.file);
+            });
+
+            // Realizar la petición
+            const response = await fetch('/api/dash/clients/contact', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result: ApiResponse<SendCustomEmailResponse> = await response.json();
+
+            if (result.success) {
+                // Limpiar formulario
+                setSubject("");
+                setMessage("");
+                setRecipientName("");
+                setAttachments([]);
+
+                // Limpiar input de archivos
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+
+                alert(`¡Email enviado exitosamente!\nPara: ${result.data?.to}\nAsunto: ${result.data?.subject}\nArchivos adjuntos: ${result.data?.attachmentCount || 0}`);
+            } else {
+                alert(`Error: ${result.error || 'Error desconocido'}`);
+            }
+        } catch (error) {
+            console.error('Error sending email:', error);
+            alert('Error de conexión. Por favor, inténtalo de nuevo.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const formatFileSize = (bytes: number) => {
@@ -94,10 +168,11 @@ function ContactClientPage({ params }: ContactProps) {
 
                     <form onSubmit={handleSubmit} className="p-6">
                         <div className="space-y-6">
+
                             {/* Campo de asunto */}
                             <div>
                                 <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Asunto
+                                    Asunto *
                                 </label>
                                 <input
                                     type="text"
@@ -113,7 +188,7 @@ function ContactClientPage({ params }: ContactProps) {
                             {/* Campo de mensaje */}
                             <div>
                                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Mensaje
+                                    Mensaje *
                                 </label>
                                 <textarea
                                     id="message"
@@ -128,7 +203,9 @@ function ContactClientPage({ params }: ContactProps) {
                             {/* Lista de archivos adjuntos */}
                             {attachments.length > 0 && (
                                 <div className="border border-gray-100 rounded-md bg-gray-50 p-4">
-                                    <h3 className="text-xs font-medium text-gray-700 mb-2">Archivos adjuntos</h3>
+                                    <h3 className="text-xs font-medium text-gray-700 mb-2">
+                                        Archivos adjuntos ({attachments.length}/10)
+                                    </h3>
                                     <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                         {attachments.map(file => (
                                             <li key={file.id} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200">
@@ -140,6 +217,7 @@ function ContactClientPage({ params }: ContactProps) {
                                                     type="button"
                                                     onClick={() => removeAttachment(file.id)}
                                                     className="text-gray-400 hover:text-gray-600 ml-2"
+                                                    disabled={isLoading}
                                                 >
                                                     <IoMdClose size={18} />
                                                 </button>
@@ -158,23 +236,30 @@ function ContactClientPage({ params }: ContactProps) {
                                         ref={fileInputRef}
                                         className="hidden"
                                         onChange={handleFileUpload}
+                                        accept="*/*"
+                                        disabled={isLoading || attachments.length >= 10}
                                     />
                                     <button
                                         type="button"
                                         onClick={triggerFileInput}
-                                        className="flex items-center text-sm font-medium text-gray-600 hover:text-green-600 transition px-4 py-2 border border-gray-200 rounded-md"
+                                        disabled={isLoading || attachments.length >= 10}
+                                        className="flex items-center text-sm font-medium text-gray-600 hover:text-green-600 transition px-4 py-2 border border-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <IoAttach size={20} className="mr-2" />
                                         Adjuntar archivos
                                     </button>
+                                    {attachments.length >= 10 && (
+                                        <p className="text-xs text-red-500 mt-1">Máximo 10 archivos permitidos</p>
+                                    )}
                                 </div>
 
                                 <button
                                     type="submit"
-                                    className="text-xs bg-green-500 hover:bg-green-600 text-white px-8 py-2 rounded-md font-medium flex items-center transition"
+                                    disabled={isLoading || !subject.trim() || !message.trim()}
+                                    className="text-xs bg-green-500 hover:bg-green-600 text-white px-8 py-2 rounded-md font-medium flex items-center transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <IoSend size={20} className="mr-2" />
-                                    Enviar mensaje
+                                    {isLoading ? 'Enviando...' : 'Enviar mensaje'}
                                 </button>
                             </div>
                         </div>
