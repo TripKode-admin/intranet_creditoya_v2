@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/useAuth";
+import { GeistSans } from 'geist/font/sans';
 
 export const metadata: Metadata = {
   title: "Intranet Credito Ya",
@@ -16,11 +16,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet" />
-      </head>
       <body
-        className={"antialiased"}
+        className={GeistSans.className}
       >
         <AuthProvider>
           {children}

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { HiOutlineArrowUpRight } from "react-icons/hi2";
 import { IoBugOutline } from "react-icons/io5";
 import { LiaCloudSolid } from "react-icons/lia";
+import { AiOutlineBlock } from "react-icons/ai";
+import { BookText } from "lucide-react";
 
 function SupportPage() {
     const router = useRouter();
@@ -52,6 +54,49 @@ function SupportPage() {
                             </div>
                             <div className="grid place-content-center">
                                 <HiOutlineArrowUpRight className="text-gray-500 dr" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <header className="mt-8">
+                        <h1 className="text-xl sm:text-2xl font-medium text-gray-800">Documentación Técnica</h1>
+                        <p className="text-gray-500 text-sm mt-1">Documentación completa sobre infraestructura de CreditoYa, integraciones con terceros, APIs disponibles, especificaciones técnicas y guías de implementación para desarrolladores</p>
+                    </header>
+
+                    <div className="space-y-3">
+                        <div
+                            onClick={() => router.push("/dashboard/soporte/documentacion")}
+                            className="flex border mt-6 bg-gray-50 border-gray-100 hover:border-gray-200 p-4 rounded-md hover:shadow-sm cursor-pointer"
+                        >
+                            <div className="flex flex-row gap-3 grow">
+                                <div className="grid place-content-center">
+                                    <BookText size={50} className="drop-shadow-md text-gray-500" />
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-black">Guía</h1>
+                                    <p className="text-sm font-thin text-gray-500">Documentación completa y Arquitectura Técnica</p>
+                                </div>
+                            </div>
+                            <div className="grid place-content-center">
+                                <HiOutlineArrowUpRight className="text-gray-500" />
+                            </div>
+                        </div>
+
+                        <div
+                            onClick={() => router.push("/dashboard/soporte/error")}
+                            className="flex border mt-6 bg-gray-50 border-gray-100 hover:border-gray-200 p-4 rounded-md hover:shadow-sm cursor-pointer"
+                        >
+                            <div className="flex flex-row gap-3 grow">
+                                <div className="grid place-content-center">
+                                    <AiOutlineBlock size={50} className="drop-shadow-md text-gray-500" />
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-black">Procesos Criticos</h1>
+                                    <p className="text-sm font-thin text-gray-500">Si encuentras algún problema en las aplicaciones, por favor repórtalo aquí.</p>
+                                </div>
+                            </div>
+                            <div className="grid place-content-center">
+                                <HiOutlineArrowUpRight className="text-gray-500" />
                             </div>
                         </div>
                     </div>

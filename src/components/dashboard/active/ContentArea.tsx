@@ -11,9 +11,6 @@ function ContentActivePage() {
         loanData,
         formatCurrency,
         formatDate,
-        handlePageChange,
-        pagination,
-        getPageNumbers,
         searchQuery
     } = useActives();
 
