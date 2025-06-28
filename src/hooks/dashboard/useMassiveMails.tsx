@@ -51,20 +51,60 @@ function useMassiveMails() {
 
         const getAllUsers = async () => {
             try {
-                const response = await fetch('/api/dash/clients', { method: 'GET' });
-                if (!response.ok) {
-                    throw new Error('Error fetching users');
+                let allClients: ScalarClient[] = [];
+                let currentPage = 1;
+                let hasMorePages = true;
+                const pageSize = 100; // Usar un pageSize más grande para reducir peticiones
+
+                while (hasMorePages) {
+                    const response = await fetch(`/api/dash/clients?page=${currentPage}&pageSize=${pageSize}`, { 
+                        method: 'GET' 
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Error fetching users');
+                    }
+                    
+                    const result = await response.json();
+                    const pageData = result.data?.users || [];
+                    
+                    // Agregar los clientes de esta página al array total
+                    allClients = [...allClients, ...pageData];
+                    
+                    // Verificar si hay más páginas
+                    // Asumiendo que la API devuelve información de paginación
+                    const totalPages = result.data?.totalPages;
+                    const totalCount = result.data?.totalCount;
+                    const currentCount = result.data?.count;
+                    
+                    // Si hay información de paginación, usarla
+                    if (totalPages) {
+                        hasMorePages = currentPage < totalPages;
+                    } else if (totalCount) {
+                        hasMorePages = allClients.length < totalCount;
+                    } else {
+                        // Si no hay información de paginación, verificar si la página actual tiene datos
+                        // Si la página devuelve menos elementos que el pageSize, asumimos que es la última
+                        hasMorePages = pageData.length === pageSize;
+                    }
+                    
+                    currentPage++;
+                    
+                    // Prevenir bucle infinito en caso de error en la lógica
+                    if (currentPage > 1000) {
+                        console.warn('Se alcanzó el límite máximo de páginas (1000). Deteniendo la carga.');
+                        break;
+                    }
                 }
-                const result = await response.json();
-                const dataUsers: ScalarClient[] = result.data?.users || [];
 
                 // Transformar datos para guardar solo lo necesario
-                const clientsData: ClientData[] = dataUsers.map(client => ({
+                const clientsData: ClientData[] = allClients.map(client => ({
                     id: client.id || '',
                     email: client.email,
                     fullName: `${client.names} ${client.firstLastName} ${client.secondLastName}`.trim()
                 }));
 
+                console.log(`Se cargaron ${clientsData.length} clientes en total`);
                 setAllUsers(clientsData);
             } catch (error) {
                 console.error('Failed to fetch users:', error);
