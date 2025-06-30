@@ -3,8 +3,8 @@
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/hljs'
-import { ChevronRight, ChevronDown, FileText, Menu, X, Search, Folder, FolderOpen, File } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ChevronRight, ChevronDown, Menu, X, Search, Folder, FolderOpen, File, Hash } from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 
 interface DocFile {
@@ -20,6 +20,12 @@ interface DocFile {
     description?: string
 }
 
+interface Heading {
+    id: string
+    text: string
+    level: number
+}
+
 interface GroupedDocs {
     [key: string]: DocFile[]
 }
@@ -32,10 +38,63 @@ function DocumentacionPage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+    const [activeHeading, setActiveHeading] = useState<string>("")
+
+    // Extraer headings del contenido markdown
+    const headings = useMemo(() => {
+        if (!selectedDoc) return []
+
+        const headingRegex = /^(#{1,6})\s+(.+)$/gm
+        const matches = Array.from(selectedDoc.content.matchAll(headingRegex))
+
+        return matches.map((match, index) => {
+            const level = match[1].length
+            const text = match[2].trim()
+            const id = text.toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim()
+
+            return { id: `${id}-${index}`, text, level }
+        })
+    }, [selectedDoc])
 
     useEffect(() => {
         loadDocs()
     }, [])
+
+    // Observar scroll para highlighting automático
+    useEffect(() => {
+        if (!selectedDoc || headings.length === 0) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        setActiveHeading(entry.target.id)
+                    }
+                })
+            },
+            {
+                rootMargin: '-20% 0% -80% 0%',
+                threshold: 0
+            }
+        )
+
+        // Observar todos los headings después de un pequeño delay
+        const timeout = setTimeout(() => {
+            headings.forEach(heading => {
+                const element = document.getElementById(heading.id)
+                if (element) observer.observe(element)
+            })
+        }, 100)
+
+        return () => {
+            clearTimeout(timeout)
+            observer.disconnect()
+        }
+    }, [selectedDoc, headings])
 
     const loadDocs = async () => {
         try {
@@ -45,9 +104,7 @@ function DocumentacionPage() {
 
             setDocs(data.docs || [])
             setGroupedDocs(data.grouped || {})
-
-            // Expandir todas las secciones por defecto
-            setExpandedSections(new Set(Object.keys(data.grouped || {})))
+            setExpandedSections(new Set(['arquitectura', 'modulos', 'api rest']))
 
             if (data.docs && data.docs.length > 0) {
                 setSelectedDoc(data.docs[0])
@@ -62,6 +119,15 @@ function DocumentacionPage() {
     const handleDocSelect = (doc: DocFile) => {
         setSelectedDoc(doc)
         setIsSidebarOpen(false)
+        setActiveHeading("")
+    }
+
+    const handleHeadingClick = (headingId: string) => {
+        const element = document.getElementById(headingId)
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            setActiveHeading(headingId)
+        }
     }
 
     const toggleSection = (section: string) => {
@@ -95,7 +161,7 @@ function DocumentacionPage() {
         return filtered
     }
 
-    const renderDocTree = (docs: DocFile[], isDesktop = true) => {
+    const renderDocTree = () => {
         const filteredGrouped = getFilteredGroupedDocs()
 
         return Object.keys(filteredGrouped).map((section, sectionIndex) => {
@@ -105,68 +171,62 @@ function DocumentacionPage() {
             return (
                 <motion.div
                     key={section}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: sectionIndex * 0.1 }}
-                    className="mb-2"
+                    transition={{ delay: sectionIndex * 0.05 }}
+                    className="mb-1"
                 >
-                    {/* Encabezado de Sección */}
                     <motion.button
                         onClick={() => toggleSection(section)}
-                        className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center group text-sm font-medium ${isDesktop
-                                ? 'hover:bg-white hover:shadow-sm text-gray-700 hover:text-gray-900'
-                                : 'hover:bg-gray-50 text-gray-700 hover:text-gray-900'
-                            }`}
+                        className="w-full text-left p-2.5 rounded-lg transition-all duration-200 flex items-center group text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                     >
                         {isExpanded ? (
-                            <FolderOpen className="w-4 h-4 mr-3 text-gray-500" />
+                            <FolderOpen className="w-4 h-4 mr-2.5 text-gray-500" />
                         ) : (
-                            <Folder className="w-4 h-4 mr-3 text-gray-500" />
+                            <Folder className="w-4 h-4 mr-2.5 text-gray-500" />
                         )}
-                        <span className="flex-1 capitalize">{section.replace('-', ' ')}</span>
-                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                        <span className="flex-1 text-xs font-semibold tracking-wide uppercase">
+                            {section.replace('-', ' ')}
+                        </span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
                             }`} />
                     </motion.button>
 
-                    {/* Documentos de la Sección */}
                     <AnimatePresence>
                         {isExpanded && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="ml-4 mt-1 space-y-1"
+                                transition={{ duration: 0.15 }}
+                                className="ml-1 mt-0.5 space-y-0.5"
                             >
                                 {sectionDocs.map((doc, docIndex) => (
-                                    <motion.button
+                                    <motion.div
                                         key={doc.slug}
-                                        initial={{ opacity: 0, x: 10 }}
+                                        initial={{ opacity: 0, x: 5 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: docIndex * 0.05 }}
-                                        onClick={() => handleDocSelect(doc)}
-                                        className={`w-full text-left p-2.5 rounded-lg transition-all duration-200 flex items-center group text-sm ${selectedDoc?.slug === doc.slug
-                                                ? isDesktop
-                                                    ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
-                                                    : 'bg-gray-50 text-gray-900'
-                                                : isDesktop
-                                                    ? 'text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                                            }`}
-                                        style={{ paddingLeft: `${doc.level * 12 + 8}px` }}
+                                        transition={{ delay: docIndex * 0.03 }}
+                                        className="ml-5"
                                     >
-                                        <File className="w-3.5 h-3.5 mr-3 text-gray-400 flex-shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-medium truncate">{doc.title}</div>
-                                            {doc.description && (
-                                                <div className="text-xs text-gray-500 truncate mt-0.5">
-                                                    {doc.description}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <ChevronRight className={`w-3.5 h-3.5 text-gray-400 transition-transform flex-shrink-0 ${selectedDoc?.slug === doc.slug ? 'rotate-90' : 'group-hover:translate-x-0.5'
-                                            }`} />
-                                    </motion.button>
+                                        <button
+                                            onClick={() => handleDocSelect(doc)}
+                                            className={`w-full text-left p-2 pl-3 rounded-md transition-all duration-200 flex items-center group text-sm border-l-2 ${selectedDoc?.slug === doc.slug
+                                                    ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
+                                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-transparent hover:border-gray-200'
+                                                }`}
+                                        >
+                                            <File className="w-3.5 h-3.5 mr-2.5 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="truncate">{doc.title}</div>
+                                                {doc.description && (
+                                                    <div className="text-xs text-gray-500 truncate mt-0.5">
+                                                        {doc.description}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    </motion.div>
                                 ))}
                             </motion.div>
                         )}
@@ -174,6 +234,37 @@ function DocumentacionPage() {
                 </motion.div>
             )
         })
+    }
+
+    const renderTableOfContents = () => {
+        if (headings.length === 0) return null
+
+        return (
+            <div className="border-t border-gray-100 pt-4 mt-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                    En esta página
+                </h3>
+                <div className="space-y-1">
+                    {headings.map((heading, index) => (
+                        <motion.button
+                            key={heading.id}
+                            initial={{ opacity: 0, x: 5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.02 }}
+                            onClick={() => handleHeadingClick(heading.id)}
+                            className={`w-full text-left p-1.5 px-2 rounded-md transition-all duration-200 flex items-center text-xs ${activeHeading === heading.id
+                                    ? 'bg-blue-50 text-blue-700 font-medium'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                            style={{ paddingLeft: `${(heading.level - 1) * 12 + 8}px` }}
+                        >
+                            <Hash className="w-3 h-3 mr-2 flex-shrink-0 opacity-60" />
+                            <span className="truncate">{heading.text}</span>
+                        </motion.button>
+                    ))}
+                </div>
+            </div>
+        )
     }
 
     if (isLoading) {
@@ -184,8 +275,8 @@ function DocumentacionPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="text-center"
                 >
-                    <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-500 text-sm font-medium">Cargando documentación...</p>
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3"></div>
+                    <p className="text-gray-500 text-sm">Cargando documentación...</p>
                 </motion.div>
             </div>
         )
@@ -195,27 +286,15 @@ function DocumentacionPage() {
         <div className="h-screen bg-white flex overflow-hidden">
             {/* Contenido Principal */}
             <main className="flex-1 flex flex-col min-w-0">
-                {/* Header */}
-                <header className="flex-shrink-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6">
-                    <div className="flex items-center space-x-4">
-                        <motion.h1
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="text-lg font-semibold text-gray-900"
-                        >
-                            Documentación
-                        </motion.h1>
+                {/* Header minimalista */}
+                <header className="flex-shrink-0 h-14 bg-white/80 backdrop-blur-sm border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-10">
+                    <div className="flex items-center space-x-3">
+                        <h1 className="text-lg font-semibold text-gray-900">Documentación</h1>
                         {selectedDoc && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="hidden sm:flex items-center text-sm text-gray-500"
-                            >
-                                <ChevronRight className="w-4 h-4 mx-2" />
-                                <span className="text-gray-400 capitalize">{selectedDoc.section.replace('-', ' ')}</span>
-                                <ChevronRight className="w-4 h-4 mx-2" />
-                                <span className="font-medium">{selectedDoc.title}</span>
-                            </motion.div>
+                            <div className="hidden sm:flex items-center text-sm text-gray-400">
+                                <ChevronRight className="w-4 h-4 mx-1" />
+                                <span className="text-gray-600 font-medium">{selectedDoc.title}</span>
+                            </div>
                         )}
                     </div>
 
@@ -234,32 +313,27 @@ function DocumentacionPage() {
                             {selectedDoc ? (
                                 <motion.article
                                     key={selectedDoc.slug}
-                                    initial={{ opacity: 0, y: 10 }}
+                                    initial={{ opacity: 0, y: 5 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2, ease: "easeOut" }}
-                                    className="p-8 md:p-12"
+                                    exit={{ opacity: 0, y: -5 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="p-6 md:p-8 lg:p-12"
                                 >
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: 0.1 }}
-                                        className="prose prose-gray max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:leading-relaxed prose-li:text-gray-700"
-                                    >
+                                    <div className="prose prose-gray max-w-none prose-headings:scroll-mt-20">
                                         <ReactMarkdown
                                             components={{
                                                 code({ node, inline, className, children, ...props }: any) {
                                                     const match = /language-(\w+)/.exec(className || '')
                                                     return !inline && match ? (
-                                                        <div className="my-6 overflow-hidden rounded-xl border border-gray-100">
+                                                        <div className="my-6 overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
                                                             <SyntaxHighlighter
                                                                 style={tomorrow as any}
                                                                 language={match[1]}
                                                                 PreTag="div"
-                                                                className="!bg-gray-50 !m-0 text-sm"
+                                                                className="!bg-transparent !m-0 text-sm"
                                                                 customStyle={{
                                                                     padding: '1.25rem',
-                                                                    background: '#f8fafc',
+                                                                    background: 'transparent',
                                                                     fontSize: '0.875rem',
                                                                     lineHeight: '1.5'
                                                                 }}
@@ -268,33 +342,56 @@ function DocumentacionPage() {
                                                             </SyntaxHighlighter>
                                                         </div>
                                                     ) : (
-                                                        <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded-md text-sm font-mono" {...props}>
+                                                        <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
                                                             {children}
                                                         </code>
                                                     )
                                                 },
-                                                h1: ({ children }: any) => (
-                                                    <h1 className="text-3xl font-bold text-gray-900 mt-0 mb-8 pb-4 border-b border-gray-100">
-                                                        {children}
-                                                    </h1>
-                                                ),
-                                                h2: ({ children }: any) => (
-                                                    <h2 className="text-2xl font-semibold text-gray-900 mt-12 mb-4">
-                                                        {children}
-                                                    </h2>
-                                                ),
-                                                h3: ({ children }: any) => (
-                                                    <h3 className="text-xl font-medium text-gray-900 mt-8 mb-3">
-                                                        {children}
-                                                    </h3>
-                                                ),
-                                                h4: ({ children }: any) => (
-                                                    <h4 className="text-lg font-medium text-gray-900 mt-6 mb-2">
-                                                        {children}
-                                                    </h4>
-                                                ),
+                                                h1: ({ children }: any) => {
+                                                    const text = String(children)
+                                                    const id = text.toLowerCase()
+                                                        .replace(/[^\w\s-]/g, '')
+                                                        .replace(/\s+/g, '-')
+                                                        .replace(/-+/g, '-')
+                                                        .trim() + '-0'
+                                                    return (
+                                                        <h1 id={id} className="text-3xl font-bold text-gray-900 mt-0 mb-8 pb-4 border-b border-gray-100 scroll-mt-20">
+                                                            {children}
+                                                        </h1>
+                                                    )
+                                                },
+                                                h2: ({ children }: any) => {
+                                                    const text = String(children)
+                                                    const index = headings.findIndex(h => h.text === text && h.level === 2)
+                                                    const id = headings[index]?.id || text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+                                                    return (
+                                                        <h2 id={id} className="text-2xl font-semibold text-gray-900 mt-12 mb-4 scroll-mt-20">
+                                                            {children}
+                                                        </h2>
+                                                    )
+                                                },
+                                                h3: ({ children }: any) => {
+                                                    const text = String(children)
+                                                    const index = headings.findIndex(h => h.text === text && h.level === 3)
+                                                    const id = headings[index]?.id || text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+                                                    return (
+                                                        <h3 id={id} className="text-xl font-medium text-gray-900 mt-8 mb-3 scroll-mt-20">
+                                                            {children}
+                                                        </h3>
+                                                    )
+                                                },
+                                                h4: ({ children }: any) => {
+                                                    const text = String(children)
+                                                    const index = headings.findIndex(h => h.text === text && h.level === 4)
+                                                    const id = headings[index]?.id || text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
+                                                    return (
+                                                        <h4 id={id} className="text-lg font-medium text-gray-900 mt-6 mb-2 scroll-mt-20">
+                                                            {children}
+                                                        </h4>
+                                                    )
+                                                },
                                                 p: ({ children }: any) => (
-                                                    <p className="text-gray-700 leading-relaxed mb-6 text-base">
+                                                    <p className="text-gray-700 leading-relaxed mb-6">
                                                         {children}
                                                     </p>
                                                 ),
@@ -314,32 +411,15 @@ function DocumentacionPage() {
                                                     </li>
                                                 ),
                                                 blockquote: ({ children }: any) => (
-                                                    <blockquote className="border-l-3 border-gray-200 pl-6 my-6 text-gray-600 italic bg-gray-50 py-4 rounded-r-lg">
+                                                    <blockquote className="border-l-4 border-blue-200 pl-6 my-6 text-gray-600 italic bg-blue-50/50 py-4 rounded-r-lg">
                                                         {children}
                                                     </blockquote>
-                                                ),
-                                                table: ({ children }: any) => (
-                                                    <div className="overflow-x-auto my-6">
-                                                        <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
-                                                            {children}
-                                                        </table>
-                                                    </div>
-                                                ),
-                                                th: ({ children }: any) => (
-                                                    <th className="bg-gray-50 px-4 py-3 text-left text-sm font-semibold text-gray-900 border-b border-gray-200">
-                                                        {children}
-                                                    </th>
-                                                ),
-                                                td: ({ children }: any) => (
-                                                    <td className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
-                                                        {children}
-                                                    </td>
                                                 ),
                                             }}
                                         >
                                             {selectedDoc.content}
                                         </ReactMarkdown>
-                                    </motion.div>
+                                    </div>
                                 </motion.article>
                             ) : (
                                 <motion.div
@@ -348,7 +428,9 @@ function DocumentacionPage() {
                                     className="flex items-center justify-center min-h-full p-8"
                                 >
                                     <div className="text-center">
-                                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <File className="w-6 h-6 text-gray-400" />
+                                        </div>
                                         <h2 className="text-xl font-medium text-gray-900 mb-2">
                                             Selecciona un documento
                                         </h2>
@@ -364,20 +446,17 @@ function DocumentacionPage() {
             </main>
 
             {/* Sidebar Derecho - Desktop */}
-            <aside className="hidden md:flex md:w-80 flex-col bg-gray-50 border-l border-gray-100">
+            <aside className="hidden md:flex md:w-72 flex-col bg-gray-50/50 border-l border-gray-100">
                 {/* Header del Sidebar */}
-                <div className="flex-shrink-0 p-6 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Índice</h2>
-
-                    {/* Buscador */}
-                    <div className="relative">
+                <div className="flex-shrink-0 p-4 border-b border-gray-100">
+                    <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Buscar documentos..."
+                            placeholder="Buscar..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         />
                     </div>
                 </div>
@@ -385,7 +464,8 @@ function DocumentacionPage() {
                 {/* Lista de documentos */}
                 <nav className="flex-1 overflow-y-auto p-4">
                     <div className="space-y-1">
-                        {renderDocTree(docs, true)}
+                        {renderDocTree()}
+                        {renderTableOfContents()}
                     </div>
                 </nav>
             </aside>
@@ -408,8 +488,7 @@ function DocumentacionPage() {
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             className="fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white z-50 flex flex-col shadow-xl md:hidden"
                         >
-                            {/* Header móvil */}
-                            <div className="flex-shrink-0 p-6 border-b border-gray-100">
+                            <div className="flex-shrink-0 p-4 border-b border-gray-100">
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-lg font-semibold text-gray-900">Índice</h2>
                                     <button
@@ -420,23 +499,22 @@ function DocumentacionPage() {
                                     </button>
                                 </div>
 
-                                {/* Buscador móvil */}
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Buscar documentos..."
+                                        placeholder="Buscar..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent transition-all duration-200"
+                                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                     />
                                 </div>
                             </div>
 
-                            {/* Lista de documentos móvil */}
                             <nav className="flex-1 overflow-y-auto p-4">
                                 <div className="space-y-1">
-                                    {renderDocTree(docs, false)}
+                                    {renderDocTree()}
+                                    {renderTableOfContents()}
                                 </div>
                             </nav>
                         </motion.aside>
