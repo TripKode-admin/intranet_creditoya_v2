@@ -6,6 +6,7 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import { ChevronRight, ChevronDown, Menu, X, Search, Folder, FolderOpen, File, Hash } from 'lucide-react'
 import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from 'next/navigation'
 
 interface DocFile {
     slug: string
@@ -31,6 +32,7 @@ interface GroupedDocs {
 }
 
 function DocumentacionPage() {
+    const router = useRouter();
     const [docs, setDocs] = useState<DocFile[]>([])
     const [groupedDocs, setGroupedDocs] = useState<GroupedDocs>({})
     const [selectedDoc, setSelectedDoc] = useState<DocFile | null>(null)
@@ -212,8 +214,8 @@ function DocumentacionPage() {
                                         <button
                                             onClick={() => handleDocSelect(doc)}
                                             className={`w-full text-left p-2 pl-3 rounded-md transition-all duration-200 flex items-center group text-sm border-l-2 ${selectedDoc?.slug === doc.slug
-                                                    ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
-                                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-transparent hover:border-gray-200'
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-transparent hover:border-gray-200'
                                                 }`}
                                         >
                                             <File className="w-3.5 h-3.5 mr-2.5 flex-shrink-0" />
@@ -253,8 +255,8 @@ function DocumentacionPage() {
                             transition={{ delay: index * 0.02 }}
                             onClick={() => handleHeadingClick(heading.id)}
                             className={`w-full text-left p-1.5 px-2 rounded-md transition-all duration-200 flex items-center text-xs ${activeHeading === heading.id
-                                    ? 'bg-blue-50 text-blue-700 font-medium'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'bg-blue-50 text-blue-700 font-medium'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                             style={{ paddingLeft: `${(heading.level - 1) * 12 + 8}px` }}
                         >
@@ -297,13 +299,22 @@ function DocumentacionPage() {
                             </div>
                         )}
                     </div>
+                    <div className='flex flex-row gap-3'>
+                        <button
+                            onClick={() => router.push('/dashboard/soporte')}
+                            className="flex flex-row items-center gap-2 p-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 transition-colors duration-200"
+                        >
+                            <X className="w-5 h-5 text-red-600" />
+                            <p className="hidden sm:block text-red-700">Salir de documentación</p>
+                        </button>
 
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="md:hidden p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                    >
-                        <Menu className="w-5 h-5 text-gray-600" />
-                    </button>
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="md:hidden p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                        >
+                            <Menu className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
                 </header>
 
                 {/* Contenido */}
