@@ -3,6 +3,8 @@
 import { useState } from "react";
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
 import { IoBugOutline } from "react-icons/io5";
+import BackButton from "@/components/gadgets/backBtn";
+import { Info, Settings } from "lucide-react";
 
 function ErrorsAppsPage() {
     const [activeTab, setActiveTab] = useState<"activos" | "historial">("activos");
@@ -10,12 +12,35 @@ function ErrorsAppsPage() {
     return (
         <SidebarLayout>
             <div className="pt-20 p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen overflow-scroll">
-                <header className="mb-8">
+                <BackButton />
+                <header className="mb-6">
                     <h1 className="text-xl sm:text-2xl font-medium text-gray-800">Gestión de errores</h1>
                     <p className="text-gray-500 text-sm mt-1">
                         Informa cualquier fallo detectado en las aplicaciones para poder resolverlo rápidamente.
                     </p>
                 </header>
+
+                {/* Banner Informativo */}
+                <div className="mb-6 bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                            <Info className="h-5 w-5 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-sm font-medium text-orange-800 mb-1">
+                                Sistema de monitoreo de errores en mantenimiento
+                            </h3>
+                            <p className="text-sm text-orange-700">
+                                El servicio que proporciona el monitoreo de errores en tiempo real provenientes de los servicios de 
+                                <strong> Creditoya</strong> y la funcionalidad para reportar errores no detectados automáticamente 
+                                se encuentra bajo mantenimiento y desarrollo. El sistema estará disponible nuevamente en breve.
+                            </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                            <Settings className="h-4 w-4 text-orange-500 animate-spin" />
+                        </div>
+                    </div>
+                </div>
 
                 <div className="flex justify-between items-center mb-6">
                     <div
