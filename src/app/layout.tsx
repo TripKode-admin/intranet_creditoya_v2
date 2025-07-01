@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/useAuth";
 import { GeistSans } from 'geist/font/sans';
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
   title: "Intranet Credito Ya",
@@ -19,6 +21,8 @@ export default function RootLayout({
       <body
         className={GeistSans.className}
       >
+        <SpeedInsights />
+        <Analytics />
         <AuthProvider>
           {children}
         </AuthProvider>
