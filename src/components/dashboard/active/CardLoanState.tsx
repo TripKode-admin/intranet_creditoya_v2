@@ -26,10 +26,10 @@ function CardLoanState({
                         <FiUser className="mr-2 text-gray-500" />
                         <h3 className="font-semibold text-lg">{`${item.user.names} ${item.user.firstLastName} ${item.user.secondLastName}`}</h3>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
+                    {/* <div className="flex items-center text-sm text-gray-600">
                         <FiFileText className="mr-2" />
                         <span>{`${item.document.typeDocument}: ${item.document.number}`}</span>
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="flex flex-col">

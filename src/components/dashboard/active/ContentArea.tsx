@@ -1,19 +1,21 @@
-"use client"
+import CardLoanState from "./CardLoanState";
+import ActiveIndexPage from "./IndexPage";
 
-import useActives from "@/hooks/dashboard/useActives"
-import CardLoanState from "./CardLoanState"
-import ActiveIndexPage from "./IndexPage"
-
-function ContentActivePage() {
-    const {
-        error,
-        isLoading,
-        loanData,
-        formatCurrency,
-        formatDate,
-        searchQuery
-    } = useActives();
-
+function ContentActivePage({ 
+    error, 
+    isLoading, 
+    loanData, 
+    formatCurrency, 
+    formatDate, 
+    searchQuery 
+}: {
+    error: string | null;
+    isLoading: boolean;
+    loanData: any[];
+    formatCurrency: (value: string) => string;
+    formatDate: (dateString: string) => string;
+    searchQuery: string;
+}) {
     return (
         <div className="py-4">
             {isLoading ? (
@@ -52,7 +54,7 @@ function ContentActivePage() {
                             />
                         ))}
                     </div>
-
+                    
                     <ActiveIndexPage />
                 </>
             ) : (
