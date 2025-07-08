@@ -45,6 +45,16 @@ function useMassiveMails() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showAllClients, setShowAllClients] = useState(false);
     const [excludedClientIds, setExcludedClientIds] = useState<string[]>([]);
+    
+    // Nuevos estados para el modo comunicado
+    const [isAnnouncementMode, setIsAnnouncementMode] = useState<boolean>(false);
+    const [announcementTitle, setAnnouncementTitle] = useState("");
+    const [announcementMessage, setAnnouncementMessage] = useState("");
+    const [senderName, setSenderName] = useState("CreditoYa");
+    const [bannerImage, setBannerImage] = useState<File | null>(null);
+    const [additionalMessages, setAdditionalMessages] = useState<{ title: string; content: string }[]>([]);
+    const [tempAdditionalMessage, setTempAdditionalMessage] = useState({ title: "", content: "" });
+    const bannerInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!sendAllClients) return;
@@ -156,28 +166,63 @@ function useMassiveMails() {
                     // Crear FormData para cada destinatario
                     const formData = new FormData();
 
-                    formData.append('email', recipient.email);
-                    formData.append('subject', subject);
-                    formData.append('message', message);
-                    formData.append('recipientName', recipient.name);
-                    formData.append('priority', "normal");
+                    if (isAnnouncementMode) {
+                        // Usar endpoint de comunicado
+                        formData.append('email', recipient.email);
+                        formData.append('subject', subject);
+                        formData.append('title', announcementTitle);
+                        formData.append('message', announcementMessage);
+                        formData.append('recipientName', recipient.name);
+                        formData.append('priority', "normal");
+                        
+                        if (senderName) {
+                            formData.append('senderName', "CreditoYa");
+                        }
+                        
+                        if (additionalMessages.length > 0) {
+                            formData.append('additionalMessages', JSON.stringify(additionalMessages));
+                        }
+                        
+                        if (bannerImage) {
+                            formData.append('bannerImage', bannerImage);
+                        }
 
-                    // Agregar archivos
-                    attachments.forEach(attachment => {
-                        formData.append('files', attachment.file);
-                    });
+                        const response = await fetch('/api/dash/clients/announce', {
+                            method: 'POST',
+                            body: formData,
+                        });
 
-                    const response = await fetch('/api/dash/clients/contact', {
-                        method: 'POST',
-                        body: formData,
-                    });
+                        const result: ApiResponse<any> = await response.json();
+                        results.push({
+                            email: recipient.email,
+                            success: result.success,
+                            error: result.error
+                        });
+                    } else {
+                        // Usar endpoint normal
+                        formData.append('email', recipient.email);
+                        formData.append('subject', subject);
+                        formData.append('message', message);
+                        formData.append('recipientName', recipient.name);
+                        formData.append('priority', "normal");
 
-                    const result: ApiResponse<SendCustomEmailResponse> = await response.json();
-                    results.push({
-                        email: recipient.email,
-                        success: result.success,
-                        error: result.error
-                    });
+                        // Agregar archivos
+                        attachments.forEach(attachment => {
+                            formData.append('files', attachment.file);
+                        });
+
+                        const response = await fetch('/api/dash/clients/contact', {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                        const result: ApiResponse<SendCustomEmailResponse> = await response.json();
+                        results.push({
+                            email: recipient.email,
+                            success: result.success,
+                            error: result.error
+                        });
+                    }
 
                 } catch (error) {
                     console.error(`Error sending email to ${recipient.email}:`, error);
@@ -203,9 +248,21 @@ function useMassiveMails() {
                     setAttachments([]);
                     setIndividualRecipients([]);
                     setTempRecipient({ name: "", email: "" });
+                    
+                    // Limpiar campos del modo comunicado
+                    setAnnouncementTitle("");
+                    setAnnouncementMessage("");
+                    setSenderName("");
+                    setBannerImage(null);
+                    setAdditionalMessages([]);
+                    setTempAdditionalMessage({ title: "", content: "" });
 
                     if (fileInputRef.current) {
                         fileInputRef.current.value = '';
+                    }
+                    
+                    if (bannerInputRef.current) {
+                        bannerInputRef.current.value = '';
                     }
                 }
             }
@@ -299,6 +356,44 @@ function useMassiveMails() {
         setExcludedClientIds(prev => [...prev, clientId]);
     };
 
+    // Funciones para el modo comunicado
+    const toggleAnnouncementMode = () => {
+        setIsAnnouncementMode(!isAnnouncementMode);
+    };
+
+    const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setBannerImage(e.target.files[0]);
+        }
+    };
+
+    const removeBannerImage = () => {
+        setBannerImage(null);
+        if (bannerInputRef.current) {
+            bannerInputRef.current.value = '';
+        }
+    };
+
+    const triggerBannerInput = () => {
+        if (bannerInputRef.current) {
+            bannerInputRef.current.click();
+        }
+    };
+
+    const addAdditionalMessage = () => {
+        if (!tempAdditionalMessage.title.trim() || !tempAdditionalMessage.content.trim()) {
+            alert('Por favor, completa el título y contenido del mensaje adicional');
+            return;
+        }
+
+        setAdditionalMessages([...additionalMessages, { ...tempAdditionalMessage }]);
+        setTempAdditionalMessage({ title: "", content: "" });
+    };
+
+    const removeAdditionalMessage = (index: number) => {
+        setAdditionalMessages(additionalMessages.filter((_, i) => i !== index));
+    };
+
     return {
         allUsers,
         sendAllClients,
@@ -309,6 +404,20 @@ function useMassiveMails() {
         fileInputRef,
         individualRecipients,
         tempRecipient,
+        showAllClients,
+        excludedClientIds,
+        
+        // Nuevos estados y funciones para modo comunicado
+        isAnnouncementMode,
+        announcementTitle,
+        announcementMessage,
+        senderName,
+        bannerImage,
+        additionalMessages,
+        tempAdditionalMessage,
+        bannerInputRef,
+        
+        // Funciones existentes
         setSubject,
         setMessage,
         setTempRecipient,
@@ -320,10 +429,20 @@ function useMassiveMails() {
         removeAttachment,
         triggerFileInput,
         formatFileSize,
-        showAllClients,
-        excludedClientIds,
         setShowAllClients,
         removeClientFromList,
+        
+        // Nuevas funciones para modo comunicado
+        toggleAnnouncementMode,
+        setAnnouncementTitle,
+        setAnnouncementMessage,
+        setSenderName,
+        handleBannerUpload,
+        removeBannerImage,
+        triggerBannerInput,
+        addAdditionalMessage,
+        removeAdditionalMessage,
+        setTempAdditionalMessage,
     }
 }
 

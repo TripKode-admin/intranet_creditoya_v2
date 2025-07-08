@@ -1,7 +1,7 @@
 "use client"
 
 import SidebarLayout from "@/components/gadgets/sidebar/LayoutSidebar";
-import { IoSend, IoAttach, IoAdd, IoPersonAdd } from "react-icons/io5";
+import { IoSend, IoAttach, IoAdd, IoPersonAdd, IoImageOutline } from "react-icons/io5";
 import { IoMdClose } from "react-icons/io";
 import useMassiveMails from '@/hooks/dashboard/useMassiveMails';
 import BackButton from "@/components/gadgets/backBtn";
@@ -19,6 +19,18 @@ function MasiveMailsPage() {
         tempRecipient,
         showAllClients,
         excludedClientIds,
+
+        // Estados del modo comunicado
+        isAnnouncementMode,
+        announcementTitle,
+        announcementMessage,
+        senderName,
+        bannerImage,
+        additionalMessages,
+        tempAdditionalMessage,
+        bannerInputRef,
+
+        // Funciones existentes
         handleSubmit,
         handleFileUpload,
         removeAttachment,
@@ -32,6 +44,18 @@ function MasiveMailsPage() {
         addIndividualRecipient,
         removeIndividualRecipient,
         removeClientFromList,
+
+        // Funciones del modo comunicado
+        toggleAnnouncementMode,
+        setAnnouncementTitle,
+        setAnnouncementMessage,
+        setSenderName,
+        handleBannerUpload,
+        removeBannerImage,
+        triggerBannerInput,
+        addAdditionalMessage,
+        removeAdditionalMessage,
+        setTempAdditionalMessage,
     } = useMassiveMails();
 
     // Filtrar usuarios excluidos
@@ -39,23 +63,29 @@ function MasiveMailsPage() {
 
     return (
         <SidebarLayout>
-            <div className="pt-20 p-4  md:p-8 min-h-screen overflow-scroll">
+            <div className="pt-20 p-4 md:p-8 min-h-screen overflow-scroll">
                 <div className="w-full">
                     <BackButton />
 
                     <div className="mt-5">
                         <header className="mb-8">
-                            <h1 className="text-xl sm:text-2xl font-medium text-gray-800">Nuevo mensaje</h1>
-                            <p className="text-gray-500 text-sm mt-1">Envía correos masivos a todos los clientes o a destinatarios específicos</p>
+                            <h1 className="text-xl sm:text-2xl font-medium text-gray-800">
+                                {isAnnouncementMode ? 'Nuevo comunicado' : 'Nuevo mensaje'}
+                            </h1>
+                            <p className="text-gray-500 text-sm mt-1">
+                                {isAnnouncementMode
+                                    ? 'Crea un comunicado detallado con formato profesional para tus clientes'
+                                    : 'Envía correos masivos a todos los clientes o a destinatarios específicos'
+                                }
+                            </p>
                         </header>
                     </div>
 
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-6">
-
-                            {/* Switch para envío masivo */}
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <div className="flex items-center justify-between">
+                            {/* Switches para configuración */}
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-wrap gap-10">
+                                <div className="flex items-center justify-between grow">
                                     <div>
                                         <h3 className="text-sm font-medium text-gray-700">Incluir todos los clientes</h3>
                                         <p className="text-xs text-gray-500 mt-1">
@@ -74,6 +104,23 @@ function MasiveMailsPage() {
                                             disabled={isLoading}
                                         />
                                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                </div>
+
+                                <div className="flex items-center justify-between grow">
+                                    <div>
+                                        <h3 className="text-sm font-medium text-gray-700">Modo mensaje de comunicado</h3>
+                                        <p className="text-xs text-gray-500 mt-1">Crea un correo mas detallado para un comunicado a tu clientes</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAnnouncementMode}
+                                            onChange={toggleAnnouncementMode}
+                                            className="sr-only peer"
+                                            disabled={isLoading}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
                                     </label>
                                 </div>
                             </div>
@@ -163,7 +210,7 @@ function MasiveMailsPage() {
                                 )}
                             </div>
 
-                            {/* Lista de clientes mejorada (solo mostrar cuando está activo el envío masivo) */}
+                            {/* Lista de clientes */}
                             {sendAllClients && filteredUsers.length > 0 && (
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <div className="flex items-center justify-between mb-3">
@@ -233,48 +280,6 @@ function MasiveMailsPage() {
                                             </div>
                                         )}
                                     </div>
-
-                                    {/* Mostrar clientes excluidos si los hay */}
-                                    {excludedClientIds.length > 0 && (
-                                        <div className="mt-3 pt-3 border-t border-green-200">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-xs text-red-600 font-medium">
-                                                    {excludedClientIds.length} cliente{excludedClientIds.length !== 1 ? 's' : ''} excluido{excludedClientIds.length !== 1 ? 's' : ''}
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (window.confirm('¿Quieres restaurar todos los clientes excluidos?')) {
-                                                            // Esta función debe agregarse al hook
-                                                            // setExcludedClientIds([]);
-                                                        }
-                                                    }}
-                                                    className="text-xs text-green-600 hover:text-green-700 font-medium transition"
-                                                    disabled={isLoading}
-                                                >
-                                                    Restaurar todos
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Mensaje de advertencia si no hay destinatarios */}
-                            {sendAllClients && filteredUsers.length === 0 && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div className="ml-3">
-                                            <p className="text-sm text-yellow-800">
-                                                Todos los clientes han sido excluidos. Agrega destinatarios individuales o restaura algunos clientes.
-                                            </p>
-                                        </div>
-                                    </div>
                                 </div>
                             )}
 
@@ -295,24 +300,176 @@ function MasiveMailsPage() {
                                 />
                             </div>
 
-                            {/* Campo de mensaje */}
-                            <div>
-                                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Mensaje *
-                                </label>
-                                <textarea
-                                    id="message"
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-md h-72 resize-none focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition text-base"
-                                    placeholder="Escribe tu mensaje aquí..."
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
+                            {/* Campos específicos del modo comunicado */}
+                            {isAnnouncementMode && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+                                    <h3 className="text-sm font-medium text-gray-700 mb-3">Configuración del comunicado</h3>
 
-                            {/* Lista de archivos adjuntos */}
-                            {attachments.length > 0 && (
+                                    {/* Título del comunicado */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Título del comunicado *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={announcementTitle}
+                                            onChange={(e) => setAnnouncementTitle(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition text-base"
+                                            placeholder="Título principal del comunicado"
+                                            required
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+
+                                    {/* Banner del comunicado */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Banner del comunicado ( 600px de ancho, 300px de alto )
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="file"
+                                                ref={bannerInputRef}
+                                                className="hidden"
+                                                onChange={handleBannerUpload}
+                                                accept="image/*"
+                                                disabled={isLoading}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={triggerBannerInput}
+                                                disabled={isLoading}
+                                                className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <IoImageOutline size={18} className="mr-2" />
+                                                Seleccionar imagen
+                                            </button>
+                                            {bannerImage && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-gray-600">{bannerImage.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={removeBannerImage}
+                                                        className="text-red-500 hover:text-red-600"
+                                                        disabled={isLoading}
+                                                    >
+                                                        <IoMdClose size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Mensaje principal del comunicado */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Mensaje principal (Opcional)
+                                        </label>
+                                        <textarea
+                                            value={announcementMessage}
+                                            onChange={(e) => setAnnouncementMessage(e.target.value)}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-md h-32 resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition text-base"
+                                            placeholder="Mensaje principal del comunicado..."
+                                            required
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+
+                                    {/* Mensajes adicionales */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-700 mb-3">Mensajes adicionales (Opcional)</h4>
+
+                                        {/* Inputs para agregar mensaje adicional */}
+                                        <div className="space-y-3 mb-3">
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    value={tempAdditionalMessage.title}
+                                                    onChange={(e) => setTempAdditionalMessage({
+                                                        ...tempAdditionalMessage,
+                                                        title: e.target.value
+                                                    })}
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+                                                    placeholder="Título del mensaje adicional"
+                                                    disabled={isLoading}
+                                                />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <textarea
+                                                    value={tempAdditionalMessage.content}
+                                                    onChange={(e) => setTempAdditionalMessage({
+                                                        ...tempAdditionalMessage,
+                                                        content: e.target.value
+                                                    })}
+                                                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 resize-none h-20"
+                                                    placeholder="Contenido del mensaje adicional..."
+                                                    disabled={isLoading}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={addAdditionalMessage}
+                                                    disabled={isLoading || !tempAdditionalMessage.title.trim() || !tempAdditionalMessage.content.trim()}
+                                                    className="px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-300 rounded-md hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed self-start"
+                                                >
+                                                    <IoAdd size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Lista de mensajes adicionales */}
+                                        {additionalMessages.length > 0 && (
+                                            <div className="space-y-2">
+                                                {additionalMessages.map((msg, index) => (
+                                                    <div key={index} className="bg-white px-3 py-3 rounded border border-gray-200">
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium text-gray-700 mb-1">{msg.title}</p>
+                                                                <p className="text-xs text-gray-500 whitespace-pre-wrap">{msg.content}</p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeAdditionalMessage(index)}
+                                                                className="ml-2 text-gray-400 hover:text-red-500 transition flex-shrink-0"
+                                                                disabled={isLoading}
+                                                            >
+                                                                <IoMdClose size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {additionalMessages.length === 0 && (
+                                            <div className="text-center py-3">
+                                                <p className="text-sm text-gray-500">No hay mensajes adicionales</p>
+                                                <p className="text-xs text-gray-400 mt-1">Agrega mensajes adicionales para complementar tu comunicado</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Campo de mensaje normal (solo si no está en modo comunicado) */}
+                            {!isAnnouncementMode && (
+                                <div>
+                                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Mensaje *
+                                    </label>
+                                    <textarea
+                                        id="message"
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-md h-72 resize-none focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300 transition text-base"
+                                        placeholder="Escribe tu mensaje aquí..."
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Lista de archivos adjuntos (solo en modo normal) */}
+                            {!isAnnouncementMode && attachments.length > 0 && (
                                 <div className="border border-gray-100 rounded-md bg-gray-50 p-4">
                                     <h3 className="text-xs font-medium text-gray-700 mb-2">
                                         Archivos adjuntos ({attachments.length}/10)
@@ -341,26 +498,30 @@ function MasiveMailsPage() {
                             {/* Botones de acción */}
                             <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                 <div>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        onChange={handleFileUpload}
-                                        accept="*/*"
-                                        disabled={isLoading || attachments.length >= 10}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={triggerFileInput}
-                                        disabled={isLoading || attachments.length >= 10}
-                                        className="flex items-center text-sm font-medium text-gray-600 hover:text-green-600 transition px-4 py-2 border border-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <IoAttach size={20} className="mr-2" />
-                                        Adjuntar archivos
-                                    </button>
-                                    {attachments.length >= 10 && (
-                                        <p className="text-xs text-red-500 mt-1">Máximo 10 archivos permitidos</p>
+                                    {!isAnnouncementMode && (
+                                        <>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                onChange={handleFileUpload}
+                                                accept="*/*"
+                                                disabled={isLoading || attachments.length >= 10}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={triggerFileInput}
+                                                disabled={isLoading || attachments.length >= 10}
+                                                className="flex items-center text-sm font-medium text-gray-600 hover:text-green-600 transition px-4 py-2 border border-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <IoAttach size={20} className="mr-2" />
+                                                Adjuntar archivos
+                                            </button>
+                                            {attachments.length >= 10 && (
+                                                <p className="text-xs text-red-500 mt-1">Máximo 10 archivos permitidos</p>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
@@ -369,14 +530,17 @@ function MasiveMailsPage() {
                                     disabled={
                                         isLoading ||
                                         !subject.trim() ||
-                                        !message.trim() ||
+                                        (isAnnouncementMode
+                                            ? (!announcementTitle.trim() || !announcementMessage.trim())
+                                            : !message.trim()
+                                        ) ||
                                         ((sendAllClients && filteredUsers.length === 0) && individualRecipients.length === 0)
                                     }
-                                    className="text-xs bg-green-500 hover:bg-green-600 text-white px-8 py-2 rounded-md font-medium flex items-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className={`text-xs ${isAnnouncementMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'} text-white px-8 py-2 rounded-md font-medium flex items-center transition disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                     <IoSend size={20} className="mr-2" />
                                     {isLoading ? 'Enviando...' :
-                                        `Enviar mensaje (${(sendAllClients ? filteredUsers.length : 0) + individualRecipients.length} destinatarios)`
+                                        `${isAnnouncementMode ? 'Enviar comunicado' : 'Enviar mensaje'} (${(sendAllClients ? filteredUsers.length : 0) + individualRecipients.length} destinatarios)`
                                     }
                                 </button>
                             </div>
