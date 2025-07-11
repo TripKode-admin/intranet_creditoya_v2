@@ -9,18 +9,20 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
         const loanId = searchParams.get('loanId');
+        const page = searchParams.get('page') || '1';
+        const limit = searchParams.get('limit') || '10';
 
-        // Build query string if parameters exist
-        let queryString = '';
-        if (userId || loanId) {
-            queryString = '?';
-            if (userId) queryString += `userId=${userId}`;
-            if (userId && loanId) queryString += '&';
-            if (loanId) queryString += `loanId=${loanId}`;
-        }
+        // Build query string
+        const queryParams = new URLSearchParams();
+        if (userId) queryParams.append('userId', userId);
+        if (loanId) queryParams.append('loanId', loanId);
+        queryParams.append('page', page);
+        queryParams.append('limit', limit);
+
+        const queryString = queryParams.toString();
 
         const response = await axios.get(
-            `${process.env.GATEWAY_API}/pdfs/never-downloaded${queryString}`,
+            `${process.env.GATEWAY_API}/pdfs/never-downloaded?${queryString}`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -30,7 +32,13 @@ export async function GET(request: NextRequest) {
         );
 
         return NextResponse.json({
-            data: response.data
+            data: response.data.documents,
+            pagination: {
+                total: response.data.total,
+                totalPages: response.data.totalPages,
+                currentPage: response.data.currentPage,
+                limit: parseInt(limit, 10)
+            }
         });
     } catch (error) {
         console.error("Error fetching never downloaded documents:", error);

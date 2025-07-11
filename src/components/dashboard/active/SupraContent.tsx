@@ -17,7 +17,12 @@ function ContentActivesLoans() {
         loanData,
         formatCurrency,
         formatDate,
-        searchQuery
+        searchQuery,
+        handlePageChange,
+        pagination,
+        getPageNumbers,
+        clearSearch,
+        handleSearchChange
     } = useActives();
 
     return (
@@ -31,7 +36,10 @@ function ContentActivesLoans() {
                 UpdateIndicator={UpdateIndicator}
             />
 
-            <ActiveSearchInput />
+            <ActiveSearchInput
+                searchQuery={searchQuery}
+                handleSearchChange={handleSearchChange}
+                clearSearch={clearSearch} />
 
             {/* Content area */}
             <ContentActivePage
@@ -41,6 +49,9 @@ function ContentActivesLoans() {
                 formatCurrency={formatCurrency}
                 formatDate={formatDate}
                 searchQuery={searchQuery}
+                handlePageChange={handlePageChange}
+                pagination={pagination}
+                getPageNumbers={getPageNumbers}
             />
         </div>
     )

@@ -1,14 +1,16 @@
-import useActives from "@/hooks/dashboard/useActives"
 import { FiSearch, FiX } from "react-icons/fi"
 
-function ActiveSearchInput() {
+interface ActiveSearchInputProps {
+    searchQuery: string;
+    handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    clearSearch: () => void;
+}
 
-    const {
-        searchQuery,
-        handleSearchChange,
-        clearSearch
-    } = useActives()
-
+function ActiveSearchInput({ 
+    searchQuery, 
+    handleSearchChange, 
+    clearSearch 
+}: ActiveSearchInputProps) {
     return (
         <div className="relative mb-6">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

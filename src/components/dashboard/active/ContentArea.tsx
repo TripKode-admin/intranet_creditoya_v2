@@ -1,21 +1,35 @@
 import CardLoanState from "./CardLoanState";
 import ActiveIndexPage from "./IndexPage";
 
-function ContentActivePage({ 
-    error, 
-    isLoading, 
-    loanData, 
-    formatCurrency, 
-    formatDate, 
-    searchQuery 
-}: {
+interface ContentActivePageProps {
     error: string | null;
     isLoading: boolean;
     loanData: any[];
     formatCurrency: (value: string) => string;
     formatDate: (dateString: string) => string;
     searchQuery: string;
-}) {
+    // Nuevas props para paginación
+    handlePageChange: (page: number) => void;
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+        pageSize: number;
+    };
+    getPageNumbers: () => (number | string)[];
+}
+
+function ContentActivePage({
+    error,
+    isLoading,
+    loanData,
+    formatCurrency,
+    formatDate,
+    searchQuery,
+    handlePageChange,
+    pagination,
+    getPageNumbers
+}: ContentActivePageProps) {
     return (
         <div className="py-4">
             {isLoading ? (
@@ -54,8 +68,12 @@ function ContentActivePage({
                             />
                         ))}
                     </div>
-                    
-                    <ActiveIndexPage />
+
+                    <ActiveIndexPage
+                        handlePageChange={handlePageChange}
+                        pagination={pagination}
+                        getPageNumbers={getPageNumbers}
+                    />
                 </>
             ) : (
                 <div className="flex flex-col items-center justify-center py-12">

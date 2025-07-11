@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { debounce } from "lodash";
 import { IoReloadOutline } from "react-icons/io5";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { companiesUser, ScalarClient } from "@/types/client";
 import { ScalarLoanApplication } from "@/types/loan";
 import { ScalarDocument } from "@/types/documents";
@@ -30,7 +30,8 @@ function useActives() {
     // Estado visual del input
     const [inputValue, setInputValue] = useState('');
 
-    const router = useRouter()
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [activeTab, setActiveTab] = useState<'aprobados' | 'aplazados' | 'cambio'>('aprobados');
     const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +46,37 @@ function useActives() {
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [updateInterval, setUpdateInterval] = useState<NodeJS.Timeout | null>(null);
 
+    // Refs para controlar la inicialización
+    const isInitialized = useRef(false);
+    const isInitializing = useRef(false);
+
+    // Función para actualizar la URL con los parámetros actuales
+    const updateURL = useCallback((page: number, search: string = '', tab: string = '') => {
+        const params = new URLSearchParams(searchParams);
+        
+        // Actualizar página
+        if (page > 1) {
+            params.set('page', page.toString());
+        } else {
+            params.delete('page');
+        }
+        
+        // Actualizar búsqueda
+        if (search) {
+            params.set('search', search);
+        } else {
+            params.delete('search');
+        }
+        
+        // Actualizar tab si se proporciona
+        if (tab) {
+            params.set('tab', tab);
+        }
+        
+        const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+        router.replace(newUrl, { scroll: false });
+    }, [searchParams, router]);
+
     // Función debounced para actualizar el searchTerm
     const debouncedSetSearchTerm = useCallback(
         debounce((value: string) => {
@@ -54,13 +86,13 @@ function useActives() {
     );
 
     // Función para hacer fetch a la API (ya se aplica filtrado en el endpoint)
-    const fetchData = useCallback(async (page = 1, search = '') => {
+    const fetchData = useCallback(async (page = 1, search = '', updateUrl = true, currentTab = activeTab) => {
         setIsLoading(true);
         setError(null);
 
         try {
             let statusParam = "";
-            switch (activeTab) {
+            switch (currentTab) {
                 case 'aprobados':
                     statusParam = "Aprobado";
                     break;
@@ -100,6 +132,11 @@ function useActives() {
                 });
 
                 setLastUpdated(new Date());
+                
+                // Actualizar URL solo si se solicita
+                if (updateUrl) {
+                    updateURL(response.data.page || page, search);
+                }
             } else {
                 console.warn("No data returned or invalid format:", response.data);
                 setLoanData([]);
@@ -112,28 +149,71 @@ function useActives() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, pagination.pageSize]);
+    }, [pagination.pageSize, updateURL]);
+
+    // Inicializar desde URL al cargar el componente (solo una vez)
+    useEffect(() => {
+        if (isInitialized.current || isInitializing.current) return;
+        
+        isInitializing.current = true;
+        
+        const urlPage = searchParams.get('page');
+        const urlSearch = searchParams.get('search');
+        const urlTab = searchParams.get('tab');
+        
+        let initialTab = activeTab;
+        
+        // Configurar tab desde URL
+        if (urlTab && ['aprobados', 'aplazados', 'cambio'].includes(urlTab)) {
+            initialTab = urlTab as 'aprobados' | 'aplazados' | 'cambio';
+            setActiveTab(initialTab);
+        }
+        
+        // Configurar página desde URL
+        const initialPage = urlPage ? parseInt(urlPage, 10) : 1;
+        if (initialPage > 1) {
+            setPagination(prev => ({ ...prev, currentPage: initialPage }));
+        }
+        
+        // Configurar búsqueda desde URL
+        if (urlSearch) {
+            setInputValue(urlSearch);
+            setSearchTerm(urlSearch);
+        }
+        
+        // Hacer fetch inicial con parámetros de la URL
+        fetchData(initialPage, urlSearch || '', false, initialTab).then(() => {
+            isInitialized.current = true;
+            isInitializing.current = false;
+        });
+    }, [searchParams]);
 
     // Actualizar el searchTerm con debouncing cuando cambia el valor del input
     useEffect(() => {
+        if (!isInitialized.current) return;
         debouncedSetSearchTerm(inputValue);
     }, [inputValue, debouncedSetSearchTerm]);
 
     // Buscar en el servidor cuando el searchTerm cambia
     useEffect(() => {
+        if (!isInitialized.current) return;
+        
         // Solo se hace fetch si el searchTerm está vacío o tiene más de 3 caracteres
         if (searchTerm === '' || searchTerm.length > 3) {
             fetchData(1, searchTerm);
         }
-    }, [searchTerm, fetchData]);
+    }, [searchTerm]);
 
     // Manejo del cambio de pestaña: se reinician los estados de búsqueda
     useEffect(() => {
+        if (!isInitialized.current) return;
+        
         setPagination(prev => ({ ...prev, currentPage: 1 }));
         setInputValue('');
         setSearchTerm('');
-        fetchData(1);
-    }, [activeTab, fetchData]);
+        updateURL(1, '', activeTab);
+        fetchData(1, '', true, activeTab);
+    }, [activeTab]);
 
     // Configurar intervalo para actualizar el tiempo
     useEffect(() => {
@@ -161,13 +241,15 @@ function useActives() {
     const clearSearch = () => {
         setInputValue('');
         setSearchTerm('');
-        fetchData(1);
+        updateURL(pagination.currentPage, '');
+        fetchData(pagination.currentPage);
     };
 
     // Manejo de paginación
     const handlePageChange = (newPage: number) => {
         if (newPage > 0 && newPage <= pagination.totalPages) {
             setPagination(prev => ({ ...prev, currentPage: newPage }));
+            updateURL(newPage, searchTerm);
             fetchData(newPage, searchTerm);
         }
     };
@@ -216,7 +298,7 @@ function useActives() {
 
     // Manejar recarga manual
     const handleManualRefresh = () => {
-        fetchData(pagination.currentPage, searchTerm);
+        fetchData(pagination.currentPage, searchTerm, false);
     };
 
     // Componente de indicador de actualización
@@ -287,7 +369,6 @@ function useActives() {
 
         return pageNumbers;
     };
-
 
     return {
         activeTab,

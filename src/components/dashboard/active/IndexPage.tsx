@@ -1,15 +1,23 @@
 "use client"
 
-import useActives from "@/hooks/dashboard/useActives";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
 
-function ActiveIndexPage() {
-    const {
-        handlePageChange,
-        pagination,
-        getPageNumbers
-    } = useActives();
-    
+interface ActiveIndexPageProps {
+    handlePageChange: (page: number) => void;
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+        pageSize: number;
+    };
+    getPageNumbers: () => (number | string)[];
+}
+
+function ActiveIndexPage({ 
+    handlePageChange, 
+    pagination, 
+    getPageNumbers 
+}: ActiveIndexPageProps) {
     return (
         <div className="flex justify-center mt-8 mb-4">
             {/* Botón Anterior */}
