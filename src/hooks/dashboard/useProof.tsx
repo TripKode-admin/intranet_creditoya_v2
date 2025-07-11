@@ -377,10 +377,10 @@ function useProof() {
   };
 
   // Filtrar todos los documentos
-  // const eligibleDocuments = allDocuments;
+  const eligibleDocuments = neverDownloadedDocuments;
 
   // Mostrar solo documentos NO descargados
-  const eligibleDocuments = allDocuments.filter((doc) => doc.downloadCount === 0);
+  // const eligibleDocuments = allDocuments.filter((doc) => doc.downloadCount === 0);
 
   // Mostrar documentos descargados menos de X veces
   // const eligibleDocuments = allDocuments.filter((doc) => doc.downloadCount < 5);
