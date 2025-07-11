@@ -133,6 +133,7 @@ function useProof() {
     try {
       setLoading(true);
       const response = await axios.get('/api/dash/pdfs/pending-documents', { withCredentials: true });
+      console.log(response.data)
       setPendingDocumentsLoans(response.data.data);
     } catch (err) {
       if (err instanceof Error) {
@@ -234,7 +235,7 @@ function useProof() {
       }
 
       const response = await axios.get(url, { withCredentials: true });
-      console.log(response)
+      console.log(response.data.data);
       setAllDocuments(response.data.data);
       return response.data.data;
     } catch (err) {
@@ -375,8 +376,14 @@ function useProof() {
     return `${user.names} ${user.firstLastName} ${user.secondLastName || ''}`.trim();
   };
 
-  // Filtrar documentos con downloadCount === 0
+  // Filtrar todos los documentos
+  // const eligibleDocuments = allDocuments;
+
+  // Mostrar solo documentos NO descargados
   const eligibleDocuments = allDocuments.filter((doc) => doc.downloadCount === 0);
+
+  // Mostrar documentos descargados menos de X veces
+  // const eligibleDocuments = allDocuments.filter((doc) => doc.downloadCount < 5);
 
   const handleRefresh = () => {
     fetchPendingDocumentsLoans();
