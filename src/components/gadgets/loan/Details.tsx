@@ -49,6 +49,7 @@ const getValidPhones = (loanPhone: string | undefined, clientPhone: string | und
 };
 
 export const LoanDetails = ({ loanApplication, client }: { loanApplication: ScalarLoanApplication; client: ScalarClient }) => {
+    console.log("Ciudad", loanApplication.city);
     return (
         <div className="w-full md:w-[400px] flex-grow mb-10">
             <LoanHeader loanId={loanApplication.id as string} />
@@ -75,7 +76,7 @@ export const LoanDetails = ({ loanApplication, client }: { loanApplication: Scal
                 <DetailItem
                     icon={<IoMdPin className="min-w-8 text-4xl text-gray-500 drop-shadow-md" />}
                     label="Ciudad"
-                    value={client.city as string}
+                    value={loanApplication.city as string}
                 />
 
                 <DetailItem
