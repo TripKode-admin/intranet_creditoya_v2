@@ -80,6 +80,12 @@ export const LoanDetails = ({ loanApplication, client }: { loanApplication: Scal
                 />
 
                 <DetailItem
+                    icon={<IoMdPin className="min-w-8 text-4xl text-gray-500 drop-shadow-md" />}
+                    label="Direccion de residencia"
+                    value={loanApplication.residence_address as string}
+                />
+
+                <DetailItem
                     icon={<IoMdBusiness className="min-w-8 text-4xl text-gray-500 drop-shadow-md" />}
                     label="Empresa"
                     value={handleKeyToCompany(client.currentCompanie!)}

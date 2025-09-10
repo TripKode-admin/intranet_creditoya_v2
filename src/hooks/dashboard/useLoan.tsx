@@ -51,6 +51,8 @@ function useLoan({ loanId, clientId }: { loanId: string, clientId: string }) {
                     third_flyer: loanData.third_flyer,
                     labor_card: loanData.labor_card,
                     created_at: loanData.created_at,
+                    city: loanData.city,
+                    residence_address: loanData.residence_address,
                     userId: loanData.userId ?? "",
                     upid_first_flayer: loanData.upid_first_flyer ?? "",
                     upid_second_flyer: loanData.upid_second_flyer ?? "",
