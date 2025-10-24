@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { validateToken } from "@/lib/ValidateAuth";
-import { ScalarClient } from "@/types/client";
 
 interface ApiResponse<T> {
     success: boolean;
@@ -166,6 +165,93 @@ export async function PUT(request: NextRequest) {
 
         return NextResponse.json<ApiResponse<null>>(
             { success: false, error: error instanceof Error ? error.message : "Error desconocido al actualizar el cliente" },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    const token = await validateToken();
+
+    try {
+        // Parse URL parameters
+        const { searchParams } = new URL(request.url);
+        const clientId = searchParams.get("client_id");
+
+        // Validate that client data exists
+        if (!clientId) {
+            return NextResponse.json<ApiResponse<null>>(
+                { success: false, error: "ID del cliente requerido" },
+                { status: 400 }
+            );
+        }
+
+        // Build API URL
+        const baseUrl = process.env.GATEWAY_API;
+        if (!baseUrl) {
+            throw new Error("GATEWAY_API environment variable is not defined");
+        }
+
+        const apiUrl = `${baseUrl}/clients/${encodeURIComponent(clientId)}`;
+
+        // Make DELETE request to backend
+        const response = await axios.delete(
+            apiUrl,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Cookie: `intranet-token=${token}`,
+                    'Content-Type': 'application/json',
+                },
+                timeout: 10000
+            }
+        );
+
+        // Return the response data from the backend
+        return NextResponse.json<ApiResponse<typeof response.data>>({
+            success: true,
+            data: response.data,
+        });
+
+    } catch (error) {
+        console.error("Error deleting client:", error);
+
+        // Handle specific error types
+        if (axios.isAxiosError(error)) {
+            const status = error.response?.status || 500;
+            const message = error.response?.data?.message || error.message;
+
+            // Handle specific HTTP status codes
+            if (status === 403) {
+                return NextResponse.json<ApiResponse<null>>(
+                    { success: false, error: "No tienes permisos para eliminar este cliente" },
+                    { status: 403 }
+                );
+            }
+
+            if (status === 400) {
+                return NextResponse.json<ApiResponse<null>>(
+                    { success: false, error: `Datos inválidos: ${message}` },
+                    { status: 400 }
+                );
+            }
+
+            return NextResponse.json<ApiResponse<null>>(
+                { success: false, error: `Error de API: ${message}` },
+                { status }
+            );
+        }
+
+        // Handle timeout errors
+        if (error instanceof Error && error.message.includes('timeout')) {
+            return NextResponse.json<ApiResponse<null>>(
+                { success: false, error: "La solicitud ha tardado demasiado tiempo. Por favor, inténtalo de nuevo." },
+                { status: 408 }
+            );
+        }
+
+        return NextResponse.json<ApiResponse<null>>(
+            { success: false, error: error instanceof Error ? error.message : "Error desconocido al eliminar el cliente" },
             { status: 500 }
         );
     }

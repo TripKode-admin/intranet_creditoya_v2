@@ -17,6 +17,8 @@ function FormDataClient({ params }: { params: Promise<{ client_id: string }> }) 
         isSaving,
         handleUpdateClient,
         saveSuccess,
+        handleRemoveAccount,
+        isRemoving,
     } = useClient({ params });
 
     return (
@@ -125,9 +127,15 @@ function FormDataClient({ params }: { params: Promise<{ client_id: string }> }) 
                             {isSaving ? 'Actualizando...' : 'Actualizar'}
                         </button>
 
-                        <button className="bg-red-300 hover:bg-red-400 px-4 py-2 rounded-md flex items-center justify-center gap-1 min-w-0">
+                        <button
+                            className={`${isRemoving ? 'bg-gray-400' : 'bg-red-300 hover:bg-red-400'} px-4 py-2 rounded-md flex items-center justify-center gap-1 min-w-0`}
+                            onClick={!isRemoving ? handleRemoveAccount : undefined}
+                            disabled={isRemoving}
+                        >
                             <IoBanOutline className="text-white" />
-                            <span className="text-sm text-white">Deshabilitar cuenta</span>
+                            <span className="text-sm text-white">
+                                {isRemoving ? 'Deshabilitando...' : 'Deshabilitar cuenta'}
+                            </span>
                         </button>
                     </div>
                 </div>

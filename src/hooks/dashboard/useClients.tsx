@@ -23,6 +23,7 @@ function useClient({ params }: { params: Promise<{ client_id: string }> | null }
     const [isSaving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
 
     // Resolver el parámetro de cliente (client_id)
     useEffect(() => {
@@ -162,6 +163,40 @@ function useClient({ params }: { params: Promise<{ client_id: string }> | null }
         }
     };
 
+    const handleRemoveAccount = async () => {
+        if (!clientId) return;
+
+        const confirmed = window.confirm("¿Estás seguro de que quieres deshabilitar esta cuenta?");
+        if (!confirmed) return;
+
+        setIsRemoving(true);
+        setError(null);
+
+        try {
+            const response = await axios.delete(
+                `/api/dash/clients?client_id=${clientId}`,
+                {
+                    withCredentials: true,
+                    timeout: 15000
+                }
+            );
+
+            if (response.data.success) {
+                router.push('/dashboard/clients');
+            } else {
+                setError(response.data.error || "Error al deshabilitar la cuenta.");
+            }
+        } catch (err: any) {
+            if (err.code === 'ECONNABORTED') {
+                setError("La solicitud ha tardado demasiado tiempo. Por favor, inténtalo de nuevo.");
+            } else {
+                setError(err.response?.data?.error || err.message || "Error al conectar con el servidor.");
+            }
+        } finally {
+            setIsRemoving(false);
+        }
+    };
+
     const nextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
@@ -221,6 +256,8 @@ function useClient({ params }: { params: Promise<{ client_id: string }> | null }
         saveSuccess,
         isSaving,
         handleUpdateClient,
+        handleRemoveAccount,
+        isRemoving,
 
         // UI helpers
         renderLoadingState,
